@@ -1,0 +1,16 @@
+README.md
+pyproject.toml
+src/agentbom/__init__.py
+src/agentbom/cli.py
+src/agentbom/detectors.py
+src/agentbom/report.py
+src/agentbom/risk.py
+src/agentbom/scanner.py
+src/agentbom.egg-info/PKG-INFO
+src/agentbom.egg-info/SOURCES.txt
+src/agentbom.egg-info/dependency_links.txt
+src/agentbom.egg-info/entry_points.txt
+src/agentbom.egg-info/requires.txt
+src/agentbom.egg-info/top_level.txt
+tests/test_cli.py
+tests/test_scanner.py

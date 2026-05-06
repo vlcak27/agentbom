@@ -1,0 +1,2 @@
+[console_scripts]
+agentbom = agentbom.cli:main
