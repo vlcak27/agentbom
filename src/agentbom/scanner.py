@@ -1,0 +1,139 @@
+"""Repository scanner for AgentBOM v0.1."""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+from . import __version__
+from .detectors import detect_in_text, detect_mcp_config, detect_prompt_file, is_policy_file
+from .risk import score_risks
+
+
+MAX_FILE_SIZE = 1_000_000
+IGNORE_DIRS = {
+    ".git",
+    "node_modules",
+    "venv",
+    ".venv",
+    "dist",
+    "build",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+}
+TEXT_SUFFIXES = {
+    ".cfg",
+    ".conf",
+    ".ini",
+    ".json",
+    ".lock",
+    ".md",
+    ".py",
+    ".toml",
+    ".txt",
+    ".yaml",
+    ".yml",
+}
+TEXT_NAMES = {
+    ".env.example",
+    ".gitignore",
+    "Dockerfile",
+    "Makefile",
+    "requirements.txt",
+}
+
+
+def scan_path(path: str | Path) -> dict[str, object]:
+    root = Path(path)
+    if not root.exists():
+        raise FileNotFoundError(f"path does not exist: {root}")
+    if not root.is_dir():
+        raise NotADirectoryError(f"path is not a directory: {root}")
+
+    bom: dict[str, object] = {
+        "schema_version": __version__,
+        "repository": str(root),
+        "generated_by": "agentbom",
+        "models": [],
+        "providers": [],
+        "frameworks": [],
+        "mcp_servers": [],
+        "prompts": [],
+        "capabilities": [],
+        "secret_references": [],
+        "risks": [],
+    }
+    has_policy = False
+
+    for file_path in iter_scannable_files(root):
+        relpath = file_path.relative_to(root).as_posix()
+        prompt = detect_prompt_file(relpath)
+        if prompt:
+            _append_unique(bom["prompts"], prompt)
+        mcp_config = detect_mcp_config(relpath)
+        if mcp_config:
+            _append_unique(bom["mcp_servers"], mcp_config)
+        has_policy = has_policy or is_policy_file(relpath)
+
+        text = read_text_file(file_path)
+        if text is None:
+            continue
+        detections = detect_in_text(text, relpath)
+        for key, items in detections.items():
+            for item in items:
+                _append_unique(bom[key], item)
+
+    bom["risks"] = score_risks(
+        bom["capabilities"], bom["prompts"], has_policy  # type: ignore[arg-type]
+    )
+    return bom
+
+
+def iter_scannable_files(root: Path):
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        dirnames[:] = [
+            name
+            for name in dirnames
+            if name not in IGNORE_DIRS and not (Path(dirpath) / name).is_symlink()
+        ]
+        for filename in filenames:
+            file_path = Path(dirpath) / filename
+            if file_path.is_symlink() or not file_path.is_file():
+                continue
+            try:
+                if file_path.stat().st_size > MAX_FILE_SIZE:
+                    continue
+            except OSError:
+                continue
+            if looks_like_text_file(file_path):
+                yield file_path
+
+
+def looks_like_text_file(path: Path) -> bool:
+    if path.name in TEXT_NAMES or path.suffix.lower() in TEXT_SUFFIXES:
+        return True
+    try:
+        sample = path.read_bytes()[:1024]
+    except OSError:
+        return False
+    return b"\0" not in sample
+
+
+def read_text_file(path: Path) -> str | None:
+    try:
+        data = path.read_bytes()
+    except OSError:
+        return None
+    if b"\0" in data[:1024]:
+        return None
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return data.decode("utf-8", errors="ignore")
+
+
+def _append_unique(items: list[dict[str, str]], item: dict[str, str]) -> None:
+    if item not in items:
+        items.append(item)
