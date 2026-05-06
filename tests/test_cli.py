@@ -23,10 +23,12 @@ def test_cli_generates_json_and_markdown(tmp_path):
     assert (output_dir / "agentbom.md").exists()
 
     data = json.loads((output_dir / "agentbom.json").read_text(encoding="utf-8"))
-    assert {"name": "openai", "path": "agent.py"} in data["providers"]
-    assert {"name": "langchain", "path": "agent.py"} in data["frameworks"]
-    assert {"name": "mcp.json", "path": "mcp.json"} in data["mcp_servers"]
-    assert {"path": "AGENTS.md", "type": "prompt"} in data["prompts"]
-    assert {"name": "shell", "path": "agent.py"} in data["capabilities"]
+    assert {"name": "openai", "path": "agent.py", "confidence": "high"} in data["providers"]
+    assert {"name": "langchain", "path": "agent.py", "confidence": "high"} in data["frameworks"]
+    assert {"name": "mcp.json", "path": "mcp.json", "confidence": "medium"} in data["mcp_servers"]
+    assert {"path": "AGENTS.md", "type": "prompt", "confidence": "low"} in data["prompts"]
+    assert {"name": "shell", "path": "agent.py", "confidence": "high"} in data["capabilities"]
     assert any(item["name"] == "OPENAI_API_KEY" for item in data["secret_references"])
+    assert not any(item["name"] == "api_key" for item in data["secret_references"])
+    assert not any(item["name"] == "openai_api_key" for item in data["secret_references"])
     assert "do-not-store" not in json.dumps(data)
