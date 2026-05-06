@@ -47,7 +47,11 @@ def _section(title: str, items: list[dict[str, str]]) -> list[str]:
     for item in items:
         label = item.get("name") or item.get("path") or item.get("type", "item")
         path = item.get("path")
-        lines.append(f"- {label}" + (f" ({path})" if path and path != label else ""))
+        confidence = item.get("confidence")
+        detail = f" ({path})" if path and path != label else ""
+        if confidence:
+            detail += f" [{confidence}]"
+        lines.append(f"- {label}{detail}")
     lines.append("")
     return lines
 

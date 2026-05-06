@@ -11,7 +11,7 @@ def test_scanner_ignores_large_files_and_detects_prompt_policy_risk(tmp_path):
 
     data = scan_path(project)
 
-    assert data["prompts"] == [{"path": "AGENTS.md", "type": "prompt"}]
+    assert data["prompts"] == [{"path": "AGENTS.md", "type": "prompt", "confidence": "low"}]
     assert data["providers"] == []
     assert {"severity": "low", "reason": "prompt files detected without a policy file"} in data["risks"]
 
@@ -29,3 +29,56 @@ def test_scanner_detects_medium_capabilities_and_policy_file(tmp_path):
     assert {"network", "database", "cloud"} <= capability_names
     assert {"severity": "medium", "reason": "network, database, or cloud capability detected"} in data["risks"]
     assert not any(risk["severity"] == "low" for risk in data["risks"])
+
+
+def test_provider_framework_detection_skips_docs(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "README.md").write_text("openai langchain", encoding="utf-8")
+    (project / "AGENTS.md").write_text("openai langchain", encoding="utf-8")
+    (project / "agent.yaml").write_text("provider: anthropic\nframework: crewai\n", encoding="utf-8")
+    (project / "agent.ts").write_text("import OpenAI from 'openai';\n", encoding="utf-8")
+
+    data = scan_path(project)
+
+    assert {"name": "openai", "path": "README.md", "confidence": "low"} not in data["providers"]
+    assert {"name": "langchain", "path": "AGENTS.md", "confidence": "low"} not in data["frameworks"]
+    assert {"name": "anthropic", "path": "agent.yaml", "confidence": "medium"} in data["providers"]
+    assert {"name": "crewai", "path": "agent.yaml", "confidence": "medium"} in data["frameworks"]
+    assert {"name": "openai", "path": "agent.ts", "confidence": "high"} in data["providers"]
+
+
+def test_secret_references_are_normalized_and_deduplicated(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "agent.py").write_text(
+        "\n".join(
+            [
+                "from openai import OpenAI",
+                "api_key = 'do-not-store'",
+                "openai_api_key = api_key",
+                "OPENAI_API_KEY = openai_api_key",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    data = scan_path(project)
+
+    assert data["secret_references"] == [
+        {"name": "OPENAI_API_KEY", "path": "agent.py", "confidence": "high"}
+    ]
+    assert "do-not-store" not in str(data)
+
+
+def test_generic_secret_names_without_provider_context_are_ignored(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "agent.py").write_text(
+        "api_key = 'do-not-store'\ntoken = 'do-not-store'\n",
+        encoding="utf-8",
+    )
+
+    data = scan_path(project)
+
+    assert data["secret_references"] == []
