@@ -3,6 +3,13 @@ from __future__ import annotations
 from agentbom.scanner import MAX_FILE_SIZE, scan_path
 
 
+def assert_reachable_contains(items, expected):
+    assert any(
+        all(item.get(key) == value for key, value in expected.items())
+        for item in items
+    )
+
+
 def test_scanner_ignores_large_files_and_detects_prompt_policy_risk(tmp_path):
     project = tmp_path / "agent"
     project.mkdir()
@@ -147,6 +154,162 @@ def test_secret_references_are_normalized_and_deduplicated(tmp_path):
     assert "do-not-store" not in str(data)
 
 
+def test_repository_risk_score_uses_reachability_secrets_and_missing_policy(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "agent.py").write_text(
+        "\n".join(
+            [
+                "import subprocess",
+                "from openai import OpenAI",
+                "model = 'gpt-4o'",
+                "OPENAI_API_KEY = 'do-not-store'",
+                "subprocess.run(['echo', 'hello'])",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (project / "AGENTS.md").write_text("prompt", encoding="utf-8")
+
+    data = scan_path(project)
+
+    assert data["repository_risk"] == {
+        "score": 90,
+        "severity": "critical",
+        "rationale": [
+            "high-risk reachable capability detected: code_execution",
+            "shell or code execution is present or reachable",
+            "secret references were detected",
+            "policy controls are missing or incomplete",
+        ],
+    }
+    assert "do-not-store" not in str(data["repository_risk"])
+
+
+def test_repository_risk_score_is_low_without_risk_factors(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "README.md").write_text("documentation only\n", encoding="utf-8")
+
+    data = scan_path(project)
+
+    assert data["repository_risk"] == {
+        "score": 0,
+        "severity": "low",
+        "rationale": ["no repository-level risk factors detected"],
+    }
+
+
+def test_python_ast_detection_finds_security_relevant_constructs(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "agent.py").write_text(
+        "\n".join(
+            [
+                "import subprocess as sp",
+                "import httpx as client",
+                "from anthropic import Anthropic",
+                "from mcp import ClientSession",
+                "from openai import OpenAI",
+                "",
+                "def run(session: ClientSession):",
+                "    OpenAI()",
+                "    Anthropic()",
+                "    sp.run(['echo', 'hello'])",
+                "    eval('1 + 1')",
+                "    client.get('https://example.com')",
+                "    session.call_tool('search', {'query': 'agent'})",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    data = scan_path(project)
+
+    assert {"name": "openai", "path": "agent.py", "confidence": "high"} in data["providers"]
+    assert {"name": "anthropic", "path": "agent.py", "confidence": "high"} in data["providers"]
+    assert {"name": "shell", "path": "agent.py", "confidence": "high"} in data["capabilities"]
+    assert {
+        "name": "code_execution",
+        "path": "agent.py",
+        "confidence": "high",
+    } in data["capabilities"]
+    assert {"name": "network", "path": "agent.py", "confidence": "high"} in data["capabilities"]
+    assert {
+        "name": "mcp_tool_invocation",
+        "path": "agent.py",
+        "confidence": "high",
+    } in data["capabilities"]
+
+
+def test_dependency_analysis_parses_pyproject_and_requirements(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "pyproject.toml").write_text(
+        "\n".join(
+            [
+                "[project]",
+                'dependencies = ["langchain>=0.2", "mcp", "requests"]',
+                "",
+                "[project.optional-dependencies]",
+                'sandbox = ["e2b>=1"]',
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (project / "requirements.txt").write_text(
+        "\n".join(
+            [
+                "crewai==0.80.0",
+                "fastmcp>=2",
+                "docker[ssh]>=7",
+                "pytest",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    data = scan_path(project)
+
+    assert {
+        "name": "langchain",
+        "category": "ai_framework",
+        "path": "pyproject.toml",
+        "confidence": "medium",
+    } in data["dependencies"]
+    assert {
+        "name": "mcp",
+        "category": "mcp",
+        "path": "pyproject.toml",
+        "confidence": "medium",
+    } in data["dependencies"]
+    assert {
+        "name": "e2b",
+        "category": "sandbox_runtime",
+        "path": "pyproject.toml",
+        "confidence": "medium",
+    } in data["dependencies"]
+    assert {
+        "name": "crewai",
+        "category": "ai_framework",
+        "path": "requirements.txt",
+        "confidence": "low",
+    } in data["dependencies"]
+    assert {
+        "name": "fastmcp",
+        "category": "mcp",
+        "path": "requirements.txt",
+        "confidence": "low",
+    } in data["dependencies"]
+    assert {
+        "name": "docker",
+        "category": "sandbox_runtime",
+        "path": "requirements.txt",
+        "confidence": "low",
+    } in data["dependencies"]
+    assert not any(item["name"] == "pytest" for item in data["dependencies"])
+
+
 def test_generic_secret_names_without_provider_context_are_ignored(tmp_path):
     project = tmp_path / "agent"
     project.mkdir()
@@ -179,27 +342,33 @@ def test_reachable_capabilities_connect_model_to_risky_capabilities(tmp_path):
 
     data = scan_path(project)
 
-    assert {
+    assert_reachable_contains(data["reachable_capabilities"], {
         "capability": "network_access",
         "reachable_from": "gpt-4o",
         "source_file": "agent.py",
         "risk": "medium",
         "confidence": "high",
-    } in data["reachable_capabilities"]
-    assert {
+        "confidence_score": 100,
+        "paths": ["network_execution"],
+    })
+    assert_reachable_contains(data["reachable_capabilities"], {
         "capability": "code_execution",
         "reachable_from": "gpt-4o",
         "source_file": "agent.py",
         "risk": "high",
         "confidence": "high",
-    } in data["reachable_capabilities"]
-    assert {
+        "confidence_score": 100,
+        "paths": ["shell_execution"],
+    })
+    assert_reachable_contains(data["reachable_capabilities"], {
         "capability": "cloud_access",
         "reachable_from": "gpt-4o",
         "source_file": "agent.py",
         "risk": "medium",
         "confidence": "high",
-    } in data["reachable_capabilities"]
+        "confidence_score": 100,
+        "paths": ["network_execution"],
+    })
 
 
 def test_reachable_capabilities_use_framework_when_no_model_is_detected(tmp_path):
@@ -217,15 +386,47 @@ def test_reachable_capabilities_use_framework_when_no_model_is_detected(tmp_path
 
     data = scan_path(project)
 
-    assert data["reachable_capabilities"] == [
-        {
-            "capability": "network_access",
-            "reachable_from": "langchain",
-            "source_file": "agent.py",
-            "risk": "medium",
-            "confidence": "high",
-        }
-    ]
+    assert len(data["reachable_capabilities"]) == 1
+    assert_reachable_contains(data["reachable_capabilities"], {
+        "capability": "network_access",
+        "reachable_from": "langchain",
+        "source_file": "agent.py",
+        "risk": "medium",
+        "confidence": "high",
+        "confidence_score": 100,
+        "paths": ["network_execution"],
+    })
+
+
+def test_reachability_tracks_prompt_tool_and_network_paths(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "agent.py").write_text(
+        "\n".join(
+            [
+                "import requests",
+                "from mcp import ClientSession",
+                "model = 'gpt-4o'",
+                "prompt = input('task: ')",
+                "session = ClientSession()",
+                "session.call_tool('search', {'query': prompt})",
+                "requests.get('https://example.com')",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    data = scan_path(project)
+
+    assert_reachable_contains(data["reachable_capabilities"], {
+        "capability": "network_access",
+        "reachable_from": "gpt-4o",
+        "source_file": "agent.py",
+        "risk": "medium",
+        "confidence": "high",
+        "confidence_score": 100,
+        "paths": ["prompt_input", "tool_invocation", "network_execution"],
+    })
 
 
 def test_reachable_capabilities_can_cross_files_with_lower_confidence(tmp_path):
@@ -239,15 +440,16 @@ def test_reachable_capabilities_can_cross_files_with_lower_confidence(tmp_path):
 
     data = scan_path(project)
 
-    assert data["reachable_capabilities"] == [
-        {
-            "capability": "code_execution",
-            "reachable_from": "gpt-4o",
-            "source_file": "tools.py",
-            "risk": "high",
-            "confidence": "medium",
-        }
-    ]
+    assert len(data["reachable_capabilities"]) == 1
+    assert_reachable_contains(data["reachable_capabilities"], {
+        "capability": "code_execution",
+        "reachable_from": "gpt-4o",
+        "source_file": "tools.py",
+        "risk": "high",
+        "confidence": "medium",
+        "confidence_score": 85,
+        "paths": ["shell_execution"],
+    })
 
 
 def test_scanner_detects_autonomous_execution_capability(tmp_path):
@@ -275,13 +477,15 @@ def test_scanner_detects_autonomous_execution_capability(tmp_path):
         "severity": "high",
         "reason": "shell, code execution, or autonomous execution capability detected",
     } in data["risks"]
-    assert {
+    assert_reachable_contains(data["reachable_capabilities"], {
         "capability": "autonomous_execution",
         "reachable_from": "gpt-4o",
         "source_file": "agent.py",
         "risk": "high",
         "confidence": "high",
-    } in data["reachable_capabilities"]
+        "confidence_score": 100,
+        "paths": ["tool_invocation"],
+    })
 
 
 def test_scanner_detects_autonomous_execution_config_flags(tmp_path):
@@ -297,13 +501,15 @@ def test_scanner_detects_autonomous_execution_config_flags(tmp_path):
     assert data["capabilities"] == [
         {"name": "autonomous_execution", "path": "agent.yaml", "confidence": "medium"}
     ]
-    assert {
+    assert_reachable_contains(data["reachable_capabilities"], {
         "capability": "autonomous_execution",
         "reachable_from": "gpt-4o",
         "source_file": "agent.yaml",
         "risk": "high",
         "confidence": "medium",
-    } in data["reachable_capabilities"]
+        "confidence_score": 90,
+        "paths": ["tool_invocation"],
+    })
 
 
 def test_policy_findings_report_missing_policy_controls(tmp_path):

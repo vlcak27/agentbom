@@ -6,11 +6,11 @@ import os
 from pathlib import Path
 
 from . import __version__
-from .detectors import detect_in_text, detect_mcp_config, detect_prompt_file, is_policy_file
+from .detectors import detect_in_file
 from .graph import build_capability_graph
-from .policy import validate_policies
+from .policy import has_human_approval_text, validate_custom_policy, validate_policies
 from .reachability import detect_reachable_capability_hits, infer_reachable_capabilities
-from .risk import score_risks
+from .risk import score_repository_risk, score_risks
 
 
 MAX_FILE_SIZE = 1_000_000
@@ -50,7 +50,7 @@ TEXT_NAMES = {
 }
 
 
-def scan_path(path: str | Path) -> dict[str, object]:
+def scan_path(path: str | Path, policy_path: str | Path | None = None) -> dict[str, object]:
     root = Path(path)
     if not root.exists():
         raise FileNotFoundError(f"path does not exist: {root}")
@@ -67,33 +67,29 @@ def scan_path(path: str | Path) -> dict[str, object]:
         "mcp_servers": [],
         "prompts": [],
         "capabilities": [],
+        "dependencies": [],
         "reachable_capabilities": [],
         "capability_graph": {"nodes": [], "edges": []},
         "policy_findings": [],
+        "repository_risk": {"score": 0, "severity": "low", "rationale": []},
         "secret_references": [],
         "risks": [],
     }
     has_policy = False
+    has_human_approval = False
     reachable_capability_hits: list[dict[str, str]] = []
 
     for file_path in iter_scannable_files(root):
         relpath = file_path.relative_to(root).as_posix()
-        prompt = detect_prompt_file(relpath)
-        if prompt:
-            _append_unique(bom["prompts"], prompt)
-        mcp_config = detect_mcp_config(relpath)
-        if mcp_config:
-            _append_unique(bom["mcp_servers"], mcp_config)
-        has_policy = has_policy or is_policy_file(relpath)
-
         text = read_text_file(file_path)
-        if text is None:
-            continue
-        detections = detect_in_text(text, relpath)
-        reachable_capability_hits.extend(detect_reachable_capability_hits(text, relpath))
-        for key, items in detections.items():
+        result = detect_in_file(relpath, text)
+        has_policy = has_policy or result.has_policy
+        for key, items in result.findings.items():
             for item in items:
                 _append_unique(bom[key], item)
+        if text is not None:
+            has_human_approval = has_human_approval or has_human_approval_text(text)
+            reachable_capability_hits.extend(detect_reachable_capability_hits(text, relpath))
 
     bom["reachable_capabilities"] = infer_reachable_capabilities(
         bom["models"], bom["frameworks"], bom["mcp_servers"], reachable_capability_hits  # type: ignore[arg-type]
@@ -111,6 +107,15 @@ def scan_path(path: str | Path) -> dict[str, object]:
     bom["policy_findings"] = validate_policies(
         bom["prompts"], bom["capabilities"], bom["mcp_servers"], has_policy  # type: ignore[arg-type]
     )
+    if policy_path is not None:
+        for finding in validate_custom_policy(policy_path, bom, has_human_approval):
+            _append_unique(bom["policy_findings"], finding)
+    bom["repository_risk"] = score_repository_risk(
+        bom["reachable_capabilities"],
+        bom["capabilities"],
+        bom["secret_references"],
+        bom["policy_findings"],
+    )  # type: ignore[arg-type]
     return bom
 
 

@@ -47,21 +47,57 @@ REACHABILITY_RULES = (
 
 CONFIDENCE_RANK = {"low": 1, "medium": 2, "high": 3}
 CONFIDENCE_BY_RANK = {rank: confidence for confidence, rank in CONFIDENCE_RANK.items()}
+PATH_RULES = (
+    {
+        "path": "prompt_input",
+        "patterns": (
+            "input(",
+            "prompt =",
+            "prompt:",
+            "PromptTemplate",
+            "ChatPromptTemplate",
+            "HumanMessage",
+            "SystemMessage",
+        ),
+    },
+    {
+        "path": "tool_invocation",
+        "patterns": (
+            ".call_tool(",
+            ".invoke_tool(",
+            ".invoke(",
+            "agent.run(",
+            "Tool(",
+            "@tool",
+        ),
+    },
+)
+CAPABILITY_PATHS = {
+    "autonomous_execution": "tool_invocation",
+    "cloud_access": "network_execution",
+    "code_execution": "shell_execution",
+    "network_access": "network_execution",
+    "shell_execution": "shell_execution",
+}
 
 
 def detect_reachable_capability_hits(text: str, relpath: str) -> list[dict[str, str]]:
     """Detect capability facts used for reachability inference."""
     lower = text.lower()
     confidence = confidence_for_path(relpath)
+    static_paths = _detect_static_paths(text, lower)
     hits = []
     for rule in REACHABILITY_RULES:
         if _matches_rule(text, lower, rule):
+            capability = str(rule["capability"])
+            paths = _paths_for_capability(capability, static_paths)
             hits.append(
                 {
-                    "capability": rule["capability"],
+                    "capability": capability,
                     "source_file": relpath,
-                    "risk": rule["risk"],
+                    "risk": str(rule["risk"]),
                     "confidence": confidence,
+                    "paths": paths,
                 }
             )
     return hits
@@ -93,6 +129,8 @@ def infer_reachable_capabilities(
                     "source_file": hit["source_file"],
                     "risk": hit["risk"],
                     "confidence": _combined_confidence(actor, hit),
+                    "confidence_score": _confidence_score(actor, hit),
+                    "paths": hit.get("paths", []),
                 },
             )
     return reachable
@@ -152,6 +190,42 @@ def _combined_confidence(actor: dict[str, str], hit: dict[str, str]) -> str:
     if actor["source_file"] != hit["source_file"]:
         rank = max(1, rank - 1)
     return CONFIDENCE_BY_RANK[rank]
+
+
+def _confidence_score(actor: dict[str, str], hit: dict[str, str]) -> int:
+    score = 40
+    if actor["source_file"] == hit["source_file"]:
+        score += 25
+    else:
+        score += 10
+    score += CONFIDENCE_RANK[actor["confidence"]] * 5
+    score += CONFIDENCE_RANK[hit["confidence"]] * 5
+    paths = hit.get("paths", [])
+    if not isinstance(paths, list):
+        paths = []
+    if "prompt_input" in paths:
+        score += 5
+    if "tool_invocation" in paths:
+        score += 5
+    if {"shell_execution", "network_execution"} & set(paths):
+        score += 5
+    return min(score, 100)
+
+
+def _detect_static_paths(text: str, lower_text: str) -> list[str]:
+    paths = []
+    for rule in PATH_RULES:
+        if any(pattern.lower() in lower_text for pattern in rule["patterns"]):
+            paths.append(rule["path"])
+    return paths
+
+
+def _paths_for_capability(capability: str, static_paths: list[str]) -> list[str]:
+    paths = list(static_paths)
+    capability_path = CAPABILITY_PATHS.get(capability)
+    if capability_path is not None and capability_path not in paths:
+        paths.append(capability_path)
+    return paths
 
 
 def _append_unique(items: list[dict[str, str]], item: dict[str, str]) -> None:
