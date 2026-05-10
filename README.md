@@ -1,14 +1,20 @@
 # AgentBOM
 
+![CI](https://github.com/vlcak27/agentbom/actions/workflows/ci.yml/badge.svg)
+
 AI Agent Attack Surface Analysis.
 
-AgentBOM is a minimal CLI for statically analyzing AI agent repositories. It
-generates a bill of materials focused on the security-relevant parts of an agent:
-providers, models, frameworks, prompts, MCP configuration, risky capabilities,
-reachable capabilities, policy findings, and SARIF results.
+AgentBOM is a minimal CLI for statically analyzing AI agent repositories. It generates a bill of materials focused on the security-relevant parts of an agent: providers, models, frameworks, prompts, MCP configuration, risky capabilities, reachable capabilities, policy findings, and SARIF results.
 
-AgentBOM does not execute or import scanned code. It works offline and uses
-simple deterministic pattern matching in v0.1.
+AgentBOM does not execute or import scanned code. It works offline and uses deterministic static analysis techniques in the current v0.4 implementation.
+
+## Quick Start
+
+```bash
+pip install -e ".[dev]"
+
+agentbom scan ./my-agent --sarif --cyclonedx --pretty
+```
 
 ## What is AgentBOM
 
@@ -19,25 +25,21 @@ AgentBOM scans a repository and writes:
 - `agentbom.sarif`: optional SARIF 2.1.0 output for code scanning tools
 - `agentbom.cdx.json`: optional CycloneDX JSON output
 
-The goal is to make AI agent attack surface review repeatable. AgentBOM reports
-what it found, where it found it, and how confident the scanner is.
+The goal is to make AI agent attack surface review repeatable. AgentBOM reports what it found, where it found it, and how confident the scanner is.
 
 ## Why AI agent repositories need analysis
 
-AI agents combine model output with software capabilities. Security review needs
-to identify more than package dependencies:
+AI agents combine model output with software capabilities. Security review needs to identify more than package dependencies:
 
 - which model providers and concrete models are referenced
 - which agent frameworks route prompts and tool calls
 - whether MCP servers or prompt files are present
-- whether shell, code execution, network, database, cloud, or autonomous
-  execution capabilities exist
+- whether shell, code execution, network, database, cloud, or autonomous execution capabilities exist
 - whether risky capabilities appear reachable from a model, framework, or tool
 - whether policy documentation is missing for sensitive behavior
 - whether secret names are referenced without exposing secret values
 
-Static analysis is intentionally conservative. Findings are review signals, not
-proof of exploitable vulnerabilities.
+Static analysis is intentionally conservative. Findings are review signals, not proof of exploitable vulnerabilities.
 
 ## Features
 
@@ -82,27 +84,22 @@ Capabilities include:
 - `cloud_access`
 - `autonomous_execution`
 
-AgentBOM first looks for an actor and capability in the same source file. If no
-same-file actor exists, it falls back to detected models, then frameworks, then
-tool configuration with lower confidence. This keeps inference deterministic and
-auditable.
+AgentBOM first looks for an actor and capability in the same source file. If no same-file actor exists, it falls back to detected models, then frameworks, then tool configuration with lower confidence. This keeps inference deterministic and auditable.
 
 Reachability findings also include static path evidence:
 
 - `prompt_input`: prompt variables, prompt templates, chat messages, or direct input
 - `tool_invocation`: tool calls or framework invocation patterns
-- `shell_execution`: subprocess, shell, `exec`, or `eval` execution paths
+- `shell_execution`: subprocess, shell, exec, or eval execution paths
 - `network_execution`: HTTP, cloud, or network client execution paths
 
-`confidence_score` is a deterministic 0-100 score derived from source-file
-locality, actor confidence, capability confidence, and path evidence.
+`confidence_score` is a deterministic 0-100 score derived from source-file locality, actor confidence, capability confidence, and path evidence.
 
 ## Capability Graph
 
 The JSON report includes a graph representation of the detected attack surface.
 
-Nodes represent providers, models, frameworks, and capabilities. Edges describe
-relationships:
+Nodes represent providers, models, frameworks, and capabilities. Edges describe relationships:
 
 - `uses`: a model or framework uses a provider
 - `enables`: a framework enables a capability
@@ -125,8 +122,7 @@ Example:
 
 ## SARIF Export
 
-Use `--sarif` to write `agentbom.sarif` alongside the JSON and Markdown reports.
-SARIF output includes scanner risks, reachable capabilities, and policy findings.
+Use `--sarif` to write `agentbom.sarif` alongside the JSON and Markdown reports. SARIF output includes scanner risks, reachable capabilities, and policy findings.
 
 Example SARIF result:
 
@@ -151,16 +147,13 @@ Example SARIF result:
 
 ## CycloneDX Export
 
-Use `--cyclonedx` to write `agentbom.cdx.json` alongside the native AgentBOM
-JSON and Markdown reports. The CycloneDX export is separate from the native
-AgentBOM schema and includes detected providers, models, frameworks,
-capabilities, and dependencies as CycloneDX components with `agentbom:*`
-properties.
+Use `--cyclonedx` to write `agentbom.cdx.json` alongside the native AgentBOM JSON and Markdown reports.
+
+The CycloneDX export is separate from the native AgentBOM schema and includes detected providers, models, frameworks, capabilities, and dependencies as CycloneDX components with `agentbom:*` properties.
 
 ## Example Output
 
-Given an agent that imports LangChain, reads `OPENAI_API_KEY`, and calls
-`subprocess.run`, AgentBOM can produce:
+Given an agent that imports LangChain, reads `OPENAI_API_KEY`, and calls `subprocess.run`, AgentBOM can produce:
 
 ```json
 {
@@ -231,21 +224,27 @@ Secret values are not stored or printed.
 
 ## Installation
 
-From a local checkout:
+Install from PyPI:
 
-```sh
+```bash
+pip install agentbom
+```
+
+Development install:
+
+```bash
 pip install -e ".[dev]"
 ```
 
 Install the pre-commit hooks:
 
-```sh
+```bash
 pre-commit install
 ```
 
 Run the hooks manually:
 
-```sh
+```bash
 pre-commit run --all-files
 ```
 
@@ -253,31 +252,31 @@ pre-commit run --all-files
 
 Scan the example repository:
 
-```sh
+```bash
 agentbom scan examples/simple_agent --pretty
 ```
 
 Write reports to a dedicated directory:
 
-```sh
+```bash
 agentbom scan /path/to/agent-repo --output-dir ./agentbom-report --pretty
 ```
 
 Generate SARIF for code scanning systems:
 
-```sh
+```bash
 agentbom scan /path/to/agent-repo --output-dir ./agentbom-report --pretty --sarif
 ```
 
 Generate CycloneDX JSON:
 
-```sh
+```bash
 agentbom scan /path/to/agent-repo --output-dir ./agentbom-report --pretty --cyclonedx
 ```
 
 Apply a custom YAML policy:
 
-```sh
+```bash
 agentbom scan /path/to/agent-repo --policy agentbom-policy.yaml --sarif --pretty
 ```
 
@@ -287,16 +286,17 @@ Example policy:
 deny_capabilities:
   - shell_execution
   - autonomous_execution
+
 require:
   sandboxing: true
   human_approval: true
 ```
 
-Custom policy violations are emitted as `policy_findings` in JSON, included in
-the Markdown report, and exported as SARIF policy results. `sandboxing` is
-satisfied by a detected sandbox/runtime dependency. `human_approval` is satisfied
-by repository text such as `human approval`, `human-in-the-loop`, or
-`approval required`.
+Custom policy violations are emitted as `policy_findings` in JSON, included in the Markdown report, and exported as SARIF policy results.
+
+`sandboxing` is satisfied by a detected sandbox/runtime dependency.
+
+`human_approval` is satisfied by repository text such as `human approval`, `human-in-the-loop`, or `approval required`.
 
 Typical output:
 
@@ -314,10 +314,7 @@ The output schema is documented in:
 docs/output-schema.json
 ```
 
-The schema uses JSON Schema draft 2020-12 and defines the stable report fields
-for `schema_version`, providers, models, frameworks, capabilities, reachable
-capabilities, dependencies, capability graph, policy findings, repository risk,
-and risks.
+The schema uses JSON Schema draft 2020-12 and defines the stable report fields for `schema_version`, providers, models, frameworks, capabilities, reachable capabilities, dependencies, capability graph, policy findings, repository risk, and risks.
 
 Minimal shape:
 
@@ -356,8 +353,7 @@ AgentBOM uses a small static-analysis pipeline:
 6. Score scanner-level risks, policy findings, and aggregate repository risk.
 7. Write JSON, Markdown, optional SARIF, and optional CycloneDX reports.
 
-The implementation is dependency-light and deterministic so it can run in local
-development, CI, and restricted review environments.
+The implementation is dependency-light and deterministic so it can run in local development, CI, and restricted review environments.
 
 ## Roadmap
 
