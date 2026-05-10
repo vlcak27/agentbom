@@ -48,6 +48,64 @@ def test_provider_framework_detection_skips_docs(tmp_path):
     assert {"name": "openai", "path": "agent.ts", "confidence": "high"} in data["providers"]
 
 
+def test_scanner_detects_concrete_models_in_code_and_config_files(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "agent.py").write_text("model = 'gpt-4o'\nfallback = 'gpt-5'\n", encoding="utf-8")
+    (project / "models.js").write_text("const models = ['gpt-4', 'gpt-4.1', 'llama3'];\n", encoding="utf-8")
+    (project / "config.ts").write_text("const model = 'mistral-large';\n", encoding="utf-8")
+    (project / "agent.json").write_text('{"model": "claude-3-opus"}\n', encoding="utf-8")
+    (project / "agent.yaml").write_text(
+        "models:\n- claude-3\n- claude-3-sonnet\n- claude-3-haiku\n- gemini-pro\n- gemini-1.5-pro\n- gemini-2.0-flash\n",
+        encoding="utf-8",
+    )
+    (project / "settings.toml").write_text('model = "gemini-pro"\n', encoding="utf-8")
+
+    data = scan_path(project)
+    models = {(item["name"], item["source_file"], item["confidence"]) for item in data["models"]}
+
+    assert ("gpt-4o", "agent.py", "high") in models
+    assert ("gpt-5", "agent.py", "high") in models
+    assert ("gpt-4", "models.js", "high") in models
+    assert ("gpt-4.1", "models.js", "high") in models
+    assert ("llama3", "models.js", "high") in models
+    assert ("mistral-large", "config.ts", "high") in models
+    assert ("claude-3-opus", "agent.json", "medium") in models
+    assert ("claude-3", "agent.yaml", "medium") in models
+    assert ("claude-3-sonnet", "agent.yaml", "medium") in models
+    assert ("claude-3-haiku", "agent.yaml", "medium") in models
+    assert ("gemini-pro", "agent.yaml", "medium") in models
+    assert ("gemini-1.5-pro", "agent.yaml", "medium") in models
+    assert ("gemini-2.0-flash", "agent.yaml", "medium") in models
+    assert ("gemini-pro", "settings.toml", "medium") in models
+    assert all(item["type"] == "model" for item in data["models"])
+    assert all(item["evidence"] == item["name"] for item in data["models"])
+
+
+def test_model_detection_skips_markdown_docs_and_keeps_providers_separate(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "README.md").write_text("gpt-4o openai", encoding="utf-8")
+    (project / "AGENTS.md").write_text("claude-3-opus anthropic", encoding="utf-8")
+    (project / "agent.py").write_text(
+        "from openai import OpenAI\nmodel = 'gpt-4o'\napi_key = 'do-not-store'\n",
+        encoding="utf-8",
+    )
+
+    data = scan_path(project)
+
+    assert {
+        "type": "model",
+        "name": "gpt-4o",
+        "source_file": "agent.py",
+        "confidence": "high",
+        "evidence": "gpt-4o",
+    } in data["models"]
+    assert not any(item["source_file"].endswith(".md") for item in data["models"])
+    assert {"name": "openai", "path": "agent.py", "confidence": "high"} in data["providers"]
+    assert "do-not-store" not in str(data)
+
+
 def test_secret_references_are_normalized_and_deduplicated(tmp_path):
     project = tmp_path / "agent"
     project.mkdir()
