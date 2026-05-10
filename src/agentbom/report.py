@@ -35,6 +35,8 @@ def render_markdown(bom: dict[str, Any]) -> str:
     lines.extend(_section("MCP Config Files", bom["mcp_servers"]))
     lines.extend(_section("Prompt Files", bom["prompts"]))
     lines.extend(_section("Capabilities", bom["capabilities"]))
+    lines.extend(_reachable_capability_section(bom.get("reachable_capabilities", [])))
+    lines.extend(_policy_finding_section(bom.get("policy_findings", [])))
     lines.extend(_section("Secret References", bom["secret_references"]))
     lines.extend(_risk_section(bom["risks"]))
     return "\n".join(lines).rstrip() + "\n"
@@ -70,6 +72,31 @@ def _model_section(items: list[dict[str, str]]) -> list[str]:
         if confidence:
             detail += f" [{confidence}]"
         lines.append(f"- {name}{detail}")
+    lines.append("")
+    return lines
+
+
+def _reachable_capability_section(items: list[dict[str, str]]) -> list[str]:
+    lines = ["## Reachable Capabilities", ""]
+    if not items:
+        lines.extend(["None detected.", ""])
+        return lines
+    for item in items:
+        lines.append(
+            "- {capability} from {reachable_from} ({source_file}) "
+            "[{risk}, {confidence}]".format(**item)
+        )
+    lines.append("")
+    return lines
+
+
+def _policy_finding_section(items: list[dict[str, str]]) -> list[str]:
+    lines = ["## Policy Findings", ""]
+    if not items:
+        lines.extend(["None detected.", ""])
+        return lines
+    for item in items:
+        lines.append(f"- {item['severity']}: {item['message']} ({item['source_file']})")
     lines.append("")
     return lines
 

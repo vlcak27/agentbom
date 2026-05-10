@@ -43,6 +43,18 @@ CAPABILITIES = {
     "database": ("sqlite3", "psycopg", "sqlalchemy", "pymongo"),
     "cloud": ("boto3", "google.cloud", "azure."),
 }
+CAPABILITY_REGEXES = {
+    "autonomous_execution": (
+        r"\bwhile\s+true\s*:",
+        r"\bwhile\s*\(\s*true\s*\)",
+        r"\bfor\s*\(\s*;\s*;\s*\)",
+        r"\bmax_iterations\b",
+        r"\bauto_run\b",
+        r"\bcontinuous_mode\b",
+        r"\bself\.(?:run|execute)\s*\(",
+        r"\bagent\.(?:run|execute)\s*\(",
+    ),
+}
 
 MCP_CONFIG_NAMES = {"mcp.json", "claude_desktop_config.json"}
 PROMPT_NAMES = {"AGENTS.md", "CLAUDE.md"}
@@ -62,7 +74,7 @@ def detect_in_text(text: str, relpath: str) -> dict[str, list[dict[str, str]]]:
         "models": [],
         "providers": [],
         "frameworks": [],
-        "capabilities": _detect_patterns(CAPABILITIES, lower, relpath),
+        "capabilities": detect_capabilities(text, lower, relpath),
         "secret_references": detect_secret_references(text, relpath),
     }
     if can_detect_model(relpath):
@@ -108,6 +120,17 @@ def detect_secret_references(text: str, relpath: str) -> list[dict[str, str]]:
     }
     confidence = confidence_for_path(relpath)
     return [{"name": name, "path": relpath, "confidence": confidence} for name in sorted(names)]
+
+
+def detect_capabilities(
+    text: str, lower_text: str, relpath: str
+) -> list[dict[str, str]]:
+    findings = _detect_patterns(CAPABILITIES, lower_text, relpath)
+    confidence = confidence_for_path(relpath)
+    for name, patterns in CAPABILITY_REGEXES.items():
+        if any(re.search(pattern, text, re.IGNORECASE) for pattern in patterns):
+            _append_unique(findings, {"name": name, "path": relpath, "confidence": confidence})
+    return findings
 
 
 def detect_models(text: str, relpath: str) -> list[dict[str, str]]:
@@ -184,3 +207,8 @@ def _detect_patterns(
                 findings.append({"name": name, "path": relpath, "confidence": confidence})
                 break
     return findings
+
+
+def _append_unique(items: list[dict[str, str]], item: dict[str, str]) -> None:
+    if item not in items:
+        items.append(item)
