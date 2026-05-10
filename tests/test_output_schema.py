@@ -38,6 +38,8 @@ def test_output_schema_declares_draft_2020_12():
 
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
     assert schema["properties"]["schema_version"]["type"] == "string"
+    assert schema["properties"]["dependencies"]["items"]["$ref"] == "#/$defs/dependency_finding"
+    assert schema["properties"]["repository_risk"]["$ref"] == "#/$defs/repository_risk"
 
 
 def validate_schema_subset(instance: Any, schema: dict[str, Any], root: dict[str, Any]) -> None:
@@ -61,6 +63,8 @@ def validate_schema_subset(instance: Any, schema: dict[str, Any], root: dict[str
                 validate_schema_subset(item, item_schema, root)
     elif expected_type == "string":
         assert isinstance(instance, str)
+    elif expected_type == "integer":
+        assert isinstance(instance, int)
 
     if "enum" in schema:
         assert instance in schema["enum"]

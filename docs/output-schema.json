@@ -9,9 +9,11 @@
     "models",
     "frameworks",
     "capabilities",
+    "dependencies",
     "reachable_capabilities",
     "capability_graph",
     "policy_findings",
+    "repository_risk",
     "risks"
   ],
   "properties": {
@@ -42,6 +44,12 @@
         "$ref": "#/$defs/named_finding"
       }
     },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dependency_finding"
+      }
+    },
     "reachable_capabilities": {
       "type": "array",
       "items": {
@@ -56,6 +64,9 @@
       "items": {
         "$ref": "#/$defs/policy_finding"
       }
+    },
+    "repository_risk": {
+      "$ref": "#/$defs/repository_risk"
     },
     "risks": {
       "type": "array",
@@ -119,6 +130,34 @@
         }
       }
     },
+    "dependency_finding": {
+      "type": "object",
+      "required": [
+        "name",
+        "category",
+        "path",
+        "confidence"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "ai_framework",
+            "mcp",
+            "sandbox_runtime"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        }
+      }
+    },
     "reachable_capability": {
       "type": "object",
       "required": [
@@ -143,6 +182,49 @@
         },
         "confidence": {
           "$ref": "#/$defs/confidence"
+        },
+        "confidence_score": {
+          "type": "integer"
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "prompt_input",
+              "tool_invocation",
+              "shell_execution",
+              "network_execution"
+            ]
+          }
+        }
+      }
+    },
+    "repository_risk": {
+      "type": "object",
+      "required": [
+        "score",
+        "severity",
+        "rationale"
+      ],
+      "properties": {
+        "score": {
+          "type": "integer"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "rationale": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -176,6 +258,9 @@
           "type": "string"
         },
         "source_file": {
+          "type": "string"
+        },
+        "policy_id": {
           "type": "string"
         }
       }

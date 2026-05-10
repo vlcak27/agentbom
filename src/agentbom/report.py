@@ -35,9 +35,11 @@ def render_markdown(bom: dict[str, Any]) -> str:
     lines.extend(_section("MCP Config Files", bom["mcp_servers"]))
     lines.extend(_section("Prompt Files", bom["prompts"]))
     lines.extend(_section("Capabilities", bom["capabilities"]))
+    lines.extend(_dependency_section(bom.get("dependencies", [])))
     lines.extend(_reachable_capability_section(bom.get("reachable_capabilities", [])))
     lines.extend(_policy_finding_section(bom.get("policy_findings", [])))
     lines.extend(_section("Secret References", bom["secret_references"]))
+    lines.extend(_repository_risk_section(bom.get("repository_risk", {})))
     lines.extend(_risk_section(bom["risks"]))
     return "\n".join(lines).rstrip() + "\n"
 
@@ -82,9 +84,30 @@ def _reachable_capability_section(items: list[dict[str, str]]) -> list[str]:
         lines.extend(["None detected.", ""])
         return lines
     for item in items:
+        paths = item.get("paths", [])
+        path_detail = f"; paths: {', '.join(paths)}" if isinstance(paths, list) and paths else ""
+        score = item.get("confidence_score")
+        score_detail = f"; score: {score}" if score is not None else ""
         lines.append(
             "- {capability} from {reachable_from} ({source_file}) "
-            "[{risk}, {confidence}]".format(**item)
+            "[{risk}, {confidence}{score_detail}{path_detail}]".format(
+                score_detail=score_detail,
+                path_detail=path_detail,
+                **item,
+            )
+        )
+    lines.append("")
+    return lines
+
+
+def _dependency_section(items: list[dict[str, str]]) -> list[str]:
+    lines = ["## Dependencies", ""]
+    if not items:
+        lines.extend(["None detected.", ""])
+        return lines
+    for item in items:
+        lines.append(
+            "- {name} ({category}, {path}) [{confidence}]".format(**item)
         )
     lines.append("")
     return lines
@@ -97,6 +120,21 @@ def _policy_finding_section(items: list[dict[str, str]]) -> list[str]:
         return lines
     for item in items:
         lines.append(f"- {item['severity']}: {item['message']} ({item['source_file']})")
+    lines.append("")
+    return lines
+
+
+def _repository_risk_section(item: dict[str, Any]) -> list[str]:
+    lines = ["## Repository Risk", ""]
+    score = item.get("score", 0)
+    severity = item.get("severity", "low")
+    lines.append(f"- Score: {score}")
+    lines.append(f"- Severity: {severity}")
+    rationale = item.get("rationale", [])
+    if isinstance(rationale, list) and rationale:
+        lines.append("- Rationale:")
+        for reason in rationale:
+            lines.append(f"  - {reason}")
     lines.append("")
     return lines
 
