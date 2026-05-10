@@ -29,6 +29,7 @@ def render_markdown(bom: dict[str, Any]) -> str:
         "",
     ]
 
+    lines.extend(_model_section(bom.get("models", [])))
     lines.extend(_section("Providers", bom.get("providers", bom.get("models", []))))
     lines.extend(_section("Frameworks", bom["frameworks"]))
     lines.extend(_section("MCP Config Files", bom["mcp_servers"]))
@@ -52,6 +53,23 @@ def _section(title: str, items: list[dict[str, str]]) -> list[str]:
         if confidence:
             detail += f" [{confidence}]"
         lines.append(f"- {label}{detail}")
+    lines.append("")
+    return lines
+
+
+def _model_section(items: list[dict[str, str]]) -> list[str]:
+    lines = ["## Models", ""]
+    if not items:
+        lines.extend(["None detected.", ""])
+        return lines
+    for item in items:
+        name = item.get("name", "model")
+        source_file = item.get("source_file")
+        confidence = item.get("confidence")
+        detail = f" ({source_file})" if source_file else ""
+        if confidence:
+            detail += f" [{confidence}]"
+        lines.append(f"- {name}{detail}")
     lines.append("")
     return lines
 

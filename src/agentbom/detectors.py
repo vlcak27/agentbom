@@ -161,7 +161,7 @@ def can_detect_model(relpath: str) -> bool:
 
 def can_detect_provider_or_framework(relpath: str) -> bool:
     suffix = PurePosixPath(relpath).suffix.lower()
-    return suffix in {".py", ".ts", ".js", ".json", ".yaml", ".yml"}
+    return suffix in {".py", ".ts", ".js", ".json", ".yaml", ".yml", ".toml"}
 
 
 def confidence_for_path(relpath: str) -> str:

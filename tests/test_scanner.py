@@ -48,6 +48,19 @@ def test_provider_framework_detection_skips_docs(tmp_path):
     assert {"name": "openai", "path": "agent.ts", "confidence": "high"} in data["providers"]
 
 
+def test_agents_md_is_prompt_only_for_ai_terms(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "AGENTS.md").write_text("openai langchain gpt-4o", encoding="utf-8")
+
+    data = scan_path(project)
+
+    assert data["prompts"] == [{"path": "AGENTS.md", "type": "prompt", "confidence": "low"}]
+    assert data["providers"] == []
+    assert data["frameworks"] == []
+    assert data["models"] == []
+
+
 def test_scanner_detects_concrete_models_in_code_and_config_files(tmp_path):
     project = tmp_path / "agent"
     project.mkdir()
@@ -59,7 +72,10 @@ def test_scanner_detects_concrete_models_in_code_and_config_files(tmp_path):
         "models:\n- claude-3\n- claude-3-sonnet\n- claude-3-haiku\n- gemini-pro\n- gemini-1.5-pro\n- gemini-2.0-flash\n",
         encoding="utf-8",
     )
-    (project / "settings.toml").write_text('model = "gemini-pro"\n', encoding="utf-8")
+    (project / "settings.toml").write_text(
+        'provider = "gemini"\nframework = "semantic-kernel"\nmodel = "gemini-pro"\n',
+        encoding="utf-8",
+    )
 
     data = scan_path(project)
     models = {(item["name"], item["source_file"], item["confidence"]) for item in data["models"]}
@@ -78,6 +94,8 @@ def test_scanner_detects_concrete_models_in_code_and_config_files(tmp_path):
     assert ("gemini-1.5-pro", "agent.yaml", "medium") in models
     assert ("gemini-2.0-flash", "agent.yaml", "medium") in models
     assert ("gemini-pro", "settings.toml", "medium") in models
+    assert {"name": "gemini", "path": "settings.toml", "confidence": "medium"} in data["providers"]
+    assert {"name": "semantic_kernel", "path": "settings.toml", "confidence": "medium"} in data["frameworks"]
     assert all(item["type"] == "model" for item in data["models"])
     assert all(item["evidence"] == item["name"] for item in data["models"])
 
