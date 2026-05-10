@@ -7,11 +7,11 @@ def score_risks(capabilities: list[dict[str, str]], prompts: list[dict[str, str]
     risks: list[dict[str, str]] = []
     capability_names = {item["name"] for item in capabilities}
 
-    if capability_names & {"shell", "code_execution"}:
+    if capability_names & {"shell", "code_execution", "autonomous_execution"}:
         risks.append(
             {
                 "severity": "high",
-                "reason": "shell or code execution capability detected",
+                "reason": "shell, code execution, or autonomous execution capability detected",
             }
         )
 

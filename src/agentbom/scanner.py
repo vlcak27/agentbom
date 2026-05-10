@@ -7,6 +7,9 @@ from pathlib import Path
 
 from . import __version__
 from .detectors import detect_in_text, detect_mcp_config, detect_prompt_file, is_policy_file
+from .graph import build_capability_graph
+from .policy import validate_policies
+from .reachability import detect_reachable_capability_hits, infer_reachable_capabilities
 from .risk import score_risks
 
 
@@ -64,10 +67,14 @@ def scan_path(path: str | Path) -> dict[str, object]:
         "mcp_servers": [],
         "prompts": [],
         "capabilities": [],
+        "reachable_capabilities": [],
+        "capability_graph": {"nodes": [], "edges": []},
+        "policy_findings": [],
         "secret_references": [],
         "risks": [],
     }
     has_policy = False
+    reachable_capability_hits: list[dict[str, str]] = []
 
     for file_path in iter_scannable_files(root):
         relpath = file_path.relative_to(root).as_posix()
@@ -83,12 +90,26 @@ def scan_path(path: str | Path) -> dict[str, object]:
         if text is None:
             continue
         detections = detect_in_text(text, relpath)
+        reachable_capability_hits.extend(detect_reachable_capability_hits(text, relpath))
         for key, items in detections.items():
             for item in items:
                 _append_unique(bom[key], item)
 
+    bom["reachable_capabilities"] = infer_reachable_capabilities(
+        bom["models"], bom["frameworks"], bom["mcp_servers"], reachable_capability_hits  # type: ignore[arg-type]
+    )
+    bom["capability_graph"] = build_capability_graph(
+        bom["providers"],
+        bom["models"],
+        bom["frameworks"],
+        bom["capabilities"],
+        bom["reachable_capabilities"],
+    )  # type: ignore[arg-type]
     bom["risks"] = score_risks(
         bom["capabilities"], bom["prompts"], has_policy  # type: ignore[arg-type]
+    )
+    bom["policy_findings"] = validate_policies(
+        bom["prompts"], bom["capabilities"], bom["mcp_servers"], has_policy  # type: ignore[arg-type]
     )
     return bom
 

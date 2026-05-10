@@ -1,0 +1,254 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentbom.dev/schemas/output-schema.json",
+  "title": "AgentBOM Output",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "providers",
+    "models",
+    "frameworks",
+    "capabilities",
+    "reachable_capabilities",
+    "capability_graph",
+    "policy_findings",
+    "risks"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "providers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/named_finding"
+      }
+    },
+    "models": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/model_finding"
+      }
+    },
+    "frameworks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/named_finding"
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/named_finding"
+      }
+    },
+    "reachable_capabilities": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/reachable_capability"
+      }
+    },
+    "capability_graph": {
+      "$ref": "#/$defs/capability_graph"
+    },
+    "policy_findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/policy_finding"
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/risk"
+      }
+    }
+  },
+  "$defs": {
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "named_finding": {
+      "type": "object",
+      "required": [
+        "name",
+        "path",
+        "confidence"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        }
+      }
+    },
+    "model_finding": {
+      "type": "object",
+      "required": [
+        "type",
+        "name",
+        "source_file",
+        "confidence",
+        "evidence"
+      ],
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "source_file": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        },
+        "evidence": {
+          "type": "string"
+        }
+      }
+    },
+    "reachable_capability": {
+      "type": "object",
+      "required": [
+        "capability",
+        "reachable_from",
+        "source_file",
+        "risk",
+        "confidence"
+      ],
+      "properties": {
+        "capability": {
+          "type": "string"
+        },
+        "reachable_from": {
+          "type": "string"
+        },
+        "source_file": {
+          "type": "string"
+        },
+        "risk": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        }
+      }
+    },
+    "risk": {
+      "type": "object",
+      "required": [
+        "severity",
+        "reason"
+      ],
+      "properties": {
+        "severity": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "policy_finding": {
+      "type": "object",
+      "required": [
+        "severity",
+        "message",
+        "source_file"
+      ],
+      "properties": {
+        "severity": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "source_file": {
+          "type": "string"
+        }
+      }
+    },
+    "capability_graph": {
+      "type": "object",
+      "required": [
+        "nodes",
+        "edges"
+      ],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/graph_node"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/graph_edge"
+          }
+        }
+      }
+    },
+    "graph_node": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "model",
+            "framework",
+            "capability",
+            "provider"
+          ]
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "graph_edge": {
+      "type": "object",
+      "required": [
+        "source",
+        "target",
+        "type"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "uses",
+            "enables",
+            "reaches"
+          ]
+        }
+      }
+    }
+  }
+}
