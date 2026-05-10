@@ -12,6 +12,22 @@ PROVIDERS = {
     "gemini": ("gemini", "google.generativeai", "GEMINI_API_KEY", "GOOGLE_API_KEY"),
 }
 
+MODELS = (
+    "gemini-2.0-flash",
+    "gemini-1.5-pro",
+    "claude-3-sonnet",
+    "claude-3-haiku",
+    "claude-3-opus",
+    "mistral-large",
+    "gemini-pro",
+    "claude-3",
+    "gpt-4.1",
+    "gpt-4o",
+    "gpt-4",
+    "gpt-5",
+    "llama3",
+)
+
 FRAMEWORKS = {
     "langchain": ("langchain",),
     "llamaindex": ("llama_index", "llamaindex"),
@@ -43,11 +59,14 @@ def detect_in_text(text: str, relpath: str) -> dict[str, list[dict[str, str]]]:
     """Return all text-based detections for a file."""
     lower = text.lower()
     detections = {
+        "models": [],
         "providers": [],
         "frameworks": [],
         "capabilities": _detect_patterns(CAPABILITIES, lower, relpath),
         "secret_references": detect_secret_references(text, relpath),
     }
+    if can_detect_model(relpath):
+        detections["models"] = detect_models(text, relpath)
     if can_detect_provider_or_framework(relpath):
         detections["providers"] = _detect_patterns(PROVIDERS, lower, relpath)
         detections["frameworks"] = _detect_patterns(FRAMEWORKS, lower, relpath)
@@ -91,6 +110,28 @@ def detect_secret_references(text: str, relpath: str) -> list[dict[str, str]]:
     return [{"name": name, "path": relpath, "confidence": confidence} for name in sorted(names)]
 
 
+def detect_models(text: str, relpath: str) -> list[dict[str, str]]:
+    findings = []
+    confidence = confidence_for_path(relpath)
+    for model in MODELS:
+        pattern = re.compile(
+            rf"(?<![A-Za-z0-9_.-]){re.escape(model)}(?![A-Za-z0-9_.-])",
+            re.IGNORECASE,
+        )
+        match = pattern.search(text)
+        if match:
+            findings.append(
+                {
+                    "type": "model",
+                    "name": model,
+                    "source_file": relpath,
+                    "confidence": confidence,
+                    "evidence": match.group(0),
+                }
+            )
+    return findings
+
+
 def normalize_secret_name(name: str, text: str) -> str | None:
     normalized = re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_").upper()
     if normalized in GENERIC_SECRET_NAMES:
@@ -113,6 +154,11 @@ def provider_context(text: str) -> str | None:
     return None
 
 
+def can_detect_model(relpath: str) -> bool:
+    suffix = PurePosixPath(relpath).suffix.lower()
+    return suffix in {".py", ".js", ".ts", ".json", ".yaml", ".yml", ".toml"}
+
+
 def can_detect_provider_or_framework(relpath: str) -> bool:
     suffix = PurePosixPath(relpath).suffix.lower()
     return suffix in {".py", ".ts", ".js", ".json", ".yaml", ".yml"}
@@ -122,7 +168,7 @@ def confidence_for_path(relpath: str) -> str:
     suffix = PurePosixPath(relpath).suffix.lower()
     if suffix in {".py", ".ts", ".js"}:
         return "high"
-    if suffix in {".json", ".yaml", ".yml"}:
+    if suffix in {".json", ".yaml", ".yml", ".toml"}:
         return "medium"
     return "low"
 
