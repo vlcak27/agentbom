@@ -11,7 +11,7 @@ jobs:
     
     permissions:
       id-token: write
-      content: read
+      contents: read
 
     steps:
       - name: Check out
