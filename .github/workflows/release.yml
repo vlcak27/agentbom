@@ -28,7 +28,5 @@ jobs:
       - name: Build package
         run: python -m build
 
-      - name: Upload release artifacts
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
