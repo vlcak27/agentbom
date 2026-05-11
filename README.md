@@ -11,7 +11,7 @@ AgentBOM does not execute or import scanned code. It works offline and uses dete
 ## Quick Start
 
 ```bash
-pip install -e ".[dev]"
+pip install ai-agentbom
 
 agentbom scan ./my-agent --sarif --cyclonedx --pretty
 ```
