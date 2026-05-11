@@ -85,14 +85,16 @@ def test_cli_generates_sarif_when_requested(tmp_path):
     assert all(result["ruleIndex"] == rules.index(rules_by_id[result["ruleId"]]) for result in results)
     assert len(rule_ids) == len(results)
     assert {
-        "physicalLocation": {
-            "artifactLocation": {"uri": "agent.py", "uriBaseId": "%SRCROOT%"}
+    "physicalLocation": {
+        "artifactLocation": {
+            "uri": "agent.py",
+            "uriBaseId": "%SRCROOT%"
+        },
+        "region": {
+            "startLine": 1
         }
-    } in [
-        location
-        for result in results
-        for location in result.get("locations", [])
-    ]
+    }
+} in locations
 
 
 def test_cli_applies_custom_policy_to_sarif(tmp_path):
