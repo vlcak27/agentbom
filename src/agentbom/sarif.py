@@ -175,9 +175,8 @@ def _add_result(
             },
         },
     )
-    if source_file is not None:
-        locations = result.setdefault("locations", [])
-        _append_unique(locations, _location(source_file))
+    locations = result.setdefault("locations", [])
+    _append_unique(locations, _location(source_file))
 
 
 def _with_rule_index(result: dict[str, Any], rule_indexes: dict[str, int]) -> dict[str, Any]:
@@ -186,13 +185,14 @@ def _with_rule_index(result: dict[str, Any], rule_indexes: dict[str, int]) -> di
     return copied
 
 
-def _location(source_file: str) -> dict[str, Any]:
+def _location(source_file: str | None) -> dict[str, Any]:
     return {
         "physicalLocation": {
             "artifactLocation": {
-                "uri": source_file,
+                "uri": source_file or "repository",
                 "uriBaseId": "%SRCROOT%",
-            }
+            },
+            "region": {"startLine": 1},
         }
     }
 
