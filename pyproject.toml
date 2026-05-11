@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agentbom"
+name = "ai-agentbom"
 version = "0.1.0"
 description = "Minimal bill of materials generator for AI agents"
 readme = "README.md"
