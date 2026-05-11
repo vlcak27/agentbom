@@ -1,0 +1,80 @@
+name: "AgentBOM Security Scan"
+
+description: "Static security analysis for AI agent repositories"
+
+branding:
+  icon: shield
+  color: red
+
+inputs:
+  path:
+    description: "Path to scan"
+    default: "."
+
+  fail-on:
+    description: "critical | high | medium | low | none"
+    default: "critical"
+
+  sarif-upload:
+    description: "Generate SARIF"
+    default: "true"
+
+  cyclonedx:
+    description: "Generate CycloneDX"
+    default: "false"
+
+  output-dir:
+    description: "Output directory"
+    default: "agentbom-report"
+
+outputs:
+  risk-score:
+    description: "Repository risk score"
+    value: ${{ steps.scan.outputs.risk-score }}
+
+  risk-severity:
+    description: "Repository risk severity"
+    value: ${{ steps.scan.outputs.risk-severity }}
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Install AgentBOM
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install ai-agentbom
+
+    - name: Run AgentBOM
+      id: scan
+      shell: bash
+      run: |
+        FLAGS=""
+
+        if [ "${{ inputs.sarif-upload }}" = "true" ]; then
+          FLAGS="$FLAGS --sarif"
+        fi
+
+        if [ "${{ inputs.cyclonedx }}" = "true" ]; then
+          FLAGS="$FLAGS --cyclonedx"
+        fi
+
+        agentbom scan "${{ inputs.path }}" \
+          --output-dir "${{ inputs.output-dir }}" \
+          --pretty \
+          $FLAGS
+
+        REPORT="${{ inputs.output-dir }}/agentbom.json"
+
+        SCORE=$(python -c "import json; d=json.load(open('$REPORT')); print(d['repository_risk']['score'])")
+        SEVERITY=$(python -c "import json; d=json.load(open('$REPORT')); print(d['repository_risk']['severity'])")
+
+        echo "risk-score=$SCORE" >> $GITHUB_OUTPUT
+        echo "risk-severity=$SEVERITY" >> $GITHUB_OUTPUT
+
+    - name: Upload SARIF
+      if: inputs.sarif-upload == 'true'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output-dir }}/agentbom.sarif
