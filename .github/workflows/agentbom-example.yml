@@ -1,0 +1,26 @@
+name: AgentBOM Security Scan
+
+on:
+  push:
+    branches: [main]
+
+  pull_request:
+
+permissions:
+  security-events: write
+  contents: read
+
+jobs:
+  agentbom:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Run AgentBOM
+        uses: vlcak27/agentbom@v1
+        with:
+          path: .
+          fail-on: critical
+          sarif-upload: true
