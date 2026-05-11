@@ -8,6 +8,7 @@ from pathlib import Path
 
 from .cyclonedx import write_cyclonedx_report
 from .html_report import write_html_report
+from .mermaid import write_mermaid_report
 from .report import write_reports
 from .sarif import write_sarif_report
 from .scanner import scan_path
@@ -24,6 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
     scan_parser.add_argument("--pretty", action="store_true", help="pretty-print JSON output")
     scan_parser.add_argument("--cyclonedx", action="store_true", help="write agentbom.cdx.json")
     scan_parser.add_argument("--html", action="store_true", help="write agentbom.html")
+    scan_parser.add_argument("--mermaid", action="store_true", help="write agentbom.mmd")
     scan_parser.add_argument("--sarif", action="store_true", help="write agentbom.sarif")
     return parser
 
@@ -38,6 +40,7 @@ def main(argv: list[str] | None = None) -> int:
             json_path, md_path = write_reports(bom, Path(args.output_dir), pretty=args.pretty)
             cyclonedx_path = None
             html_path = None
+            mermaid_path = None
             sarif_path = None
             if args.cyclonedx:
                 cyclonedx_path = write_cyclonedx_report(
@@ -45,6 +48,8 @@ def main(argv: list[str] | None = None) -> int:
                 )
             if args.html:
                 html_path = write_html_report(bom, Path(args.output_dir))
+            if args.mermaid:
+                mermaid_path = write_mermaid_report(bom, Path(args.output_dir))
             if args.sarif:
                 sarif_path = write_sarif_report(bom, Path(args.output_dir), pretty=args.pretty)
         except (FileNotFoundError, NotADirectoryError, PermissionError, ValueError) as exc:
@@ -56,6 +61,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Wrote {cyclonedx_path}")
         if html_path is not None:
             print(f"Wrote {html_path}")
+        if mermaid_path is not None:
+            print(f"Wrote {mermaid_path}")
         if sarif_path is not None:
             print(f"Wrote {sarif_path}")
         return 0
