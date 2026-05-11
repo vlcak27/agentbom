@@ -22,6 +22,7 @@ AgentBOM scans a repository and writes:
 
 - `agentbom.json`: machine-readable findings
 - `agentbom.md`: human-readable report
+- `agentbom.html`: optional self-contained offline HTML report
 - `agentbom.sarif`: optional SARIF 2.1.0 output for code scanning tools
 - `agentbom.cdx.json`: optional CycloneDX JSON output
 
@@ -55,7 +56,7 @@ Static analysis is intentionally conservative. Findings are review signals, not 
 - Capability graph output
 - Policy findings for missing or weak controls
 - Secret reference detection by name only
-- JSON, Markdown, optional SARIF, and optional CycloneDX output
+- JSON, Markdown, optional HTML, optional SARIF, and optional CycloneDX output
 
 Scanner limits:
 
@@ -274,6 +275,12 @@ Generate CycloneDX JSON:
 agentbom scan /path/to/agent-repo --output-dir ./agentbom-report --pretty --cyclonedx
 ```
 
+Generate an offline HTML security report:
+
+```bash
+agentbom scan /path/to/agent-repo --output-dir ./agentbom-report --pretty --html
+```
+
 Apply a custom YAML policy:
 
 ```bash
@@ -303,6 +310,7 @@ Typical output:
 ```text
 Wrote agentbom-report/agentbom.json
 Wrote agentbom-report/agentbom.md
+Wrote agentbom-report/agentbom.html
 Wrote agentbom-report/agentbom.sarif
 ```
 
@@ -351,7 +359,7 @@ AgentBOM uses a small static-analysis pipeline:
 4. Infer reachable capabilities from source-file locality and detected actors.
 5. Build a capability graph.
 6. Score scanner-level risks, policy findings, and aggregate repository risk.
-7. Write JSON, Markdown, optional SARIF, and optional CycloneDX reports.
+7. Write JSON, Markdown, optional HTML, optional SARIF, and optional CycloneDX reports.
 
 The implementation is dependency-light and deterministic so it can run in local development, CI, and restricted review environments.
 

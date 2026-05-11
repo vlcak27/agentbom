@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 
 from agentbom.cli import main
+from agentbom.html_report import render_html
 
 
 def test_cli_generates_json_and_markdown(tmp_path):
@@ -39,6 +40,7 @@ def test_cli_generates_json_and_markdown(tmp_path):
     assert result == 0
     assert (output_dir / "agentbom.json").exists()
     assert (output_dir / "agentbom.md").exists()
+    assert not (output_dir / "agentbom.html").exists()
     assert not (output_dir / "agentbom.sarif").exists()
 
     data = json.loads(
@@ -98,6 +100,95 @@ def test_cli_generates_json_and_markdown(tmp_path):
     )
 
     assert "do-not-store" not in json.dumps(data)
+
+
+def test_cli_generates_html_when_requested(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+
+    (project / "agent.py").write_text(
+        "\n".join(
+            [
+                "import subprocess",
+                "from langchain.chat_models import ChatOpenAI",
+                "model = 'gpt-4o'",
+                "OPENAI_API_KEY = 'do-not-store'",
+                "subprocess.run(['echo', 'hello'])",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    (project / "AGENTS.md").write_text(
+        "system prompt",
+        encoding="utf-8",
+    )
+
+    output_dir = tmp_path / "out"
+
+    result = main(
+        [
+            "scan",
+            str(project),
+            "--output-dir",
+            str(output_dir),
+            "--html",
+            "--pretty",
+        ]
+    )
+
+    assert result == 0
+    assert (output_dir / "agentbom.json").exists()
+    assert (output_dir / "agentbom.md").exists()
+    assert (output_dir / "agentbom.html").exists()
+
+    html = (output_dir / "agentbom.html").read_text(encoding="utf-8")
+
+    assert "<style>" in html
+    assert "<script" not in html.lower()
+    assert "<link" not in html.lower()
+    assert "AgentBOM Security Report" in html
+    assert "Overview" in html
+    assert "Providers &amp; Models" in html
+    assert "Reachable Capabilities" in html
+    assert "Policy Findings" in html
+    assert "Prompt Injection Surfaces" in html
+    assert "Capability Graph" in html
+    assert "score-ring" in html
+    assert "severity-" in html
+    assert "do-not-store" not in html
+
+
+def test_html_report_escapes_bom_values():
+    html = render_html(
+        {
+            "schema_version": "0.1.0",
+            "repository": "<unsafe>",
+            "generated_by": "agentbom",
+            "providers": [
+                {"name": "<openai>", "path": "agent.py", "confidence": "high"}
+            ],
+            "models": [],
+            "frameworks": [],
+            "capabilities": [],
+            "dependencies": [],
+            "reachable_capabilities": [],
+            "capability_graph": {"nodes": [], "edges": []},
+            "policy_findings": [],
+            "repository_risk": {
+                "score": 0,
+                "severity": "low",
+                "rationale": ["review <prompt> handling"],
+            },
+            "secret_references": [],
+            "risks": [],
+        }
+    )
+
+    assert "&lt;unsafe&gt;" in html
+    assert "&lt;openai&gt;" in html
+    assert "review &lt;prompt&gt; handling" in html
+    assert "<unsafe>" not in html
 
 
 def test_cli_generates_sarif_when_requested(tmp_path):
