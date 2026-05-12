@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run AgentBOM
-        uses: vlcak27/agentbom@v1
+        uses: vlcak27/agentbom@v0.5.0
         with:
           path: .
           fail-on: high

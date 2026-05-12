@@ -190,7 +190,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run AgentBOM
-        uses: vlcak27/agentbom@v1
+        uses: vlcak27/agentbom@v0.5.0
         with:
           path: .
           fail-on: high
@@ -299,6 +299,12 @@ human before being treated as a security decision.
 
 ## Development
 
+Contributor and security docs:
+
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [SECURITY.md](SECURITY.md)
+- [CHANGELOG.md](CHANGELOG.md)
+
 Install in editable mode:
 
 ```bash
@@ -310,6 +316,13 @@ Run tests and linting:
 ```bash
 ruff check .
 pytest
+```
+
+Or use:
+
+```bash
+make check
+make demo
 ```
 
 Scan the demo repository:

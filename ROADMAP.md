@@ -1,54 +1,43 @@
 # AgentBOM Roadmap
 
-## v0.1 - MVP Scanner
+AgentBOM v0.5.0 has the core public adoption surface in place: PyPI package,
+HTML reports, Mermaid export, SARIF integration, CycloneDX export, GitHub
+Action, realistic examples, and onboarding documentation.
 
-Goal: generate a basic AgentBOM JSON and Markdown report from a repository.
+The roadmap below is intentionally conservative. AgentBOM should remain
+offline-first, deterministic, dependency-light, and safe to run on untrusted
+repositories.
 
-Features:
-- Python CLI
-- repository scanner
-- provider detection
-- framework detection
-- prompt file detection
-- MCP config detection
-- risky capability detection
-- basic risk scoring
-- JSON output
-- Markdown output
-- example project
-- tests
+## Current Focus
 
-## v0.2 - Better Detection
+- Improve detector accuracy without executing scanned code.
+- Improve explanations for mixed engineering, security, and governance reviews.
+- Keep report outputs stable and easy to diff.
+- Make CI adoption simple without requiring hosted services.
 
-Features:
-- improved package parsing
-- better model name extraction
-- more agent framework detectors
-- more MCP detection
-- tool permission classification
-- config file detection
-- GitHub Actions example
+## Near-Term Candidates
 
-## v0.3 - Policy Mode
+- More package and configuration parsing with standard-library parsers where
+  possible.
+- Better MCP transport and command classification.
+- More precise framework-to-tool registration patterns.
+- Policy allowlists for expected capabilities.
+- Baseline comparison for existing repositories.
+- Additional SARIF rule help and remediation text.
+- More demo repositories that mirror real agent architectures.
 
-Features:
-- allowlist and denylist
-- fail-on severity
-- baseline comparison
-- CI/CD usage
-- SARIF output candidate
+## Not Yet Planned
 
-## v0.4 - Standard Formats
+- SPDX export.
+- Dynamic analysis.
+- Runtime tracing.
+- Telemetry.
+- Hosted scanning.
+- LLM-generated findings.
 
-Features:
-- CycloneDX export
-- SPDX export
-- schema documentation
-- signed output candidate
+## Release Principles
 
-## v0.5 - Governance Mapping
-
-Features:
-- NIST AI RMF mapping
-- EU AI Act documentation support
-- organization policy templates
+- New findings should include source paths and confidence.
+- New outputs should be deterministic.
+- New dependencies should be avoided unless they are clearly justified.
+- Secret values must never be stored or printed.
