@@ -139,6 +139,17 @@ Optional reports:
 The report guide explains how to read the findings:
 [`docs/report-guide.md`](docs/report-guide.md).
 
+Diff-aware scans compare the current report with a baseline JSON report and
+classify tracked findings as introduced, resolved, or unchanged:
+
+```bash
+agentbom scan . --baseline agentbom-baseline.json --fail-on-new high --sarif --html --pretty
+```
+
+`--fail-on-new` accepts `low`, `medium`, `high`, or `critical`. It only evaluates
+new providers, capabilities, secret references, and policy findings introduced
+since the baseline.
+
 ## Architecture
 
 AgentBOM uses a deterministic static-analysis pipeline:
@@ -210,6 +221,24 @@ jobs:
           path: agentbom-report/
 ```
 
+Diff gating example for pull requests:
+
+```yaml
+      - name: Download AgentBOM baseline
+        run: |
+          git show origin/main:agentbom-report/agentbom.json > agentbom-baseline.json
+
+      - name: Run diff-aware AgentBOM
+        run: |
+          agentbom scan . \
+            --baseline agentbom-baseline.json \
+            --fail-on-new high \
+            --output-dir agentbom-report \
+            --sarif \
+            --html \
+            --pretty
+```
+
 Operating modes:
 
 - Informational mode: use `fail-on: none` with `sarif-upload: true` and
@@ -242,6 +271,7 @@ agentbom scan /path/to/agent-repo --output-dir agentbom-report --html
 agentbom scan /path/to/agent-repo --output-dir agentbom-report --mermaid
 agentbom scan /path/to/agent-repo --output-dir agentbom-report --sarif
 agentbom scan /path/to/agent-repo --policy agentbom-policy.yaml --sarif --pretty
+agentbom scan /path/to/agent-repo --baseline agentbom-baseline.json --fail-on-new high --sarif --pretty
 ```
 
 Example policy:

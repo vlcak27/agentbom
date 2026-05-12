@@ -16,6 +16,7 @@ SECTION_HELP = {
     "dependencies": "AI, MCP, and sandbox dependencies detected in supported package manifests.",
     "secrets": "Credential names referenced by the repository. Values are never stored or printed.",
     "graph": "The same capability relationships represented as nodes and edges for architectural review.",
+    "diff": "Changes relative to the supplied baseline report.",
 }
 
 
@@ -48,6 +49,7 @@ def render_html(bom: dict[str, Any]) -> str:
             _sidebar(),
             '<main class="content">',
             _overview(bom, risk, score, severity),
+            _diff_summary(bom.get("diff", {})),
             _review_priorities(bom),
             _providers_and_models(bom),
             _named_section("Frameworks", "frameworks", bom.get("frameworks", [])),
@@ -69,6 +71,7 @@ def render_html(bom: dict[str, Any]) -> str:
 def _sidebar() -> str:
     sections = [
         ("Overview", "overview"),
+        ("Diff", "diff"),
         ("Review Priorities", "priorities"),
         ("Providers & Models", "providers-models"),
         ("Frameworks", "frameworks"),
@@ -207,6 +210,39 @@ def _priority_items(bom: dict[str, Any]) -> list[str]:
     if _list(bom.get("secret_references")):
         priorities.append("Confirm referenced credentials are stored outside the repository.")
     return priorities[:5]
+
+
+def _diff_summary(diff_value: Any) -> str:
+    diff = _dict(diff_value)
+    if not diff:
+        return ""
+    parts = []
+    for key, title in (
+        ("introduced", "Introduced Findings"),
+        ("resolved", "Resolved Findings"),
+        ("unchanged", "Unchanged Findings"),
+    ):
+        rows = [
+            [
+                escape(str(_dict(item).get("id", ""))),
+                escape(str(_dict(item).get("category", ""))),
+                escape(str(_dict(item).get("title", ""))),
+                escape(str(_dict(item).get("source_file", ""))),
+                _badge(str(_dict(item).get("severity", ""))),
+            ]
+            for item in _list(diff.get(key))
+        ]
+        parts.append(
+            f"<h2>{escape(title)}</h2>"
+            f"{_table(['ID', 'Category', 'Finding', 'Source File', 'Severity'], rows, 'None.')}"
+        )
+    return (
+        '<section id="diff" class="section">'
+        "<h1>Diff</h1>"
+        f'<p class="section-lede">{escape(SECTION_HELP["diff"])}</p>'
+        f"{''.join(parts)}"
+        "</section>"
+    )
 
 
 def _scanner_risks(items: Any) -> str:

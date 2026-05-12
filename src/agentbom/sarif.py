@@ -13,6 +13,7 @@ from . import __version__
 SARIF_VERSION = "2.1.0"
 SARIF_SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
 SECURITY_SEVERITY = {"high": "8.0", "medium": "5.0", "low": "2.0"}
+DIFF_SECURITY_SEVERITY = {"critical": "9.0", **SECURITY_SEVERITY}
 
 
 def write_sarif_report(bom: dict[str, Any], output_dir: str | Path, pretty: bool = False) -> Path:
@@ -105,6 +106,39 @@ def render_sarif(bom: dict[str, Any]) -> dict[str, Any]:
             source_file=finding["source_file"],
         )
 
+    diff = bom.get("diff", {})
+    if isinstance(diff, dict):
+        for finding in diff.get("introduced", []):
+            if not isinstance(finding, dict):
+                continue
+            severity = str(finding.get("severity", "low"))
+            category = str(finding.get("category", "finding"))
+            title = str(finding.get("title", "finding"))
+            rule_id = f"diff.introduced.{category}.{finding.get('id', '')}"
+            _register_rule(
+                rules,
+                rule_id,
+                name=f"Introduced {category}: {title}",
+                severity=severity,
+                summary=f"New {category} finding introduced since the baseline.",
+                help_text=(
+                    "Diff findings are created by comparing the current AgentBOM report "
+                    "against a supplied baseline JSON report."
+                ),
+                remediation=(
+                    "Review the introduced finding, update policy controls if it is expected, "
+                    "or remove the newly introduced risk."
+                ),
+            )
+            _add_result(
+                grouped_results,
+                rule_id,
+                severity,
+                f"Introduced {category}: {title}",
+                source_file=str(finding.get("source_file", "")),
+                properties={"agentbom.diff_id": str(finding.get("id", ""))},
+            )
+
     sorted_rules = sorted(rules.values(), key=lambda item: item["id"])
     rule_indexes = {rule["id"]: index for index, rule in enumerate(sorted_rules)}
     results = [
@@ -152,7 +186,9 @@ def _register_rule(
         "properties": {
             "precision": "medium",
             "problem.severity": severity,
-            "security-severity": SECURITY_SEVERITY.get(severity, SECURITY_SEVERITY["low"]),
+            "security-severity": DIFF_SECURITY_SEVERITY.get(
+                severity, SECURITY_SEVERITY["low"]
+            ),
             "tags": ["security", "ai-agent", "attack-surface"],
         },
     }
@@ -164,6 +200,7 @@ def _add_result(
     severity: str,
     message: str,
     source_file: str | None = None,
+    properties: dict[str, str] | None = None,
 ) -> None:
     result = results.setdefault(
         rule_id,
@@ -173,10 +210,14 @@ def _add_result(
             "message": {"text": message},
             "properties": {
                 "problem.severity": severity,
-                "security-severity": SECURITY_SEVERITY.get(severity, SECURITY_SEVERITY["low"]),
+                "security-severity": DIFF_SECURITY_SEVERITY.get(
+                    severity, SECURITY_SEVERITY["low"]
+                ),
             },
         },
     )
+    if properties:
+        result["properties"].update(properties)
     locations = result.setdefault("locations", [])
     _append_unique(locations, _location(source_file))
 
@@ -200,7 +241,7 @@ def _location(source_file: str | None) -> dict[str, Any]:
 
 
 def _level(severity: str) -> str:
-    if severity == "high":
+    if severity in {"critical", "high"}:
         return "error"
     if severity == "medium":
         return "warning"

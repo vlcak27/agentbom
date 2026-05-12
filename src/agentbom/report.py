@@ -44,6 +44,7 @@ def render_markdown(bom: dict[str, Any]) -> str:
 
     lines.extend(_reader_guide_section())
     lines.extend(_repository_risk_section(bom.get("repository_risk", {})))
+    lines.extend(_diff_section(bom.get("diff", {})))
     lines.extend(_review_priorities_section(bom))
     lines.extend(_reachable_capability_section(bom.get("reachable_capabilities", [])))
     lines.extend(_policy_finding_section(bom.get("policy_findings", [])))
@@ -224,6 +225,44 @@ def _repository_risk_section(item: dict[str, Any]) -> list[str]:
         for reason in rationale:
             lines.append(f"  - {reason}")
     lines.append("")
+    return lines
+
+
+def _diff_section(diff: object) -> list[str]:
+    if not isinstance(diff, dict):
+        return []
+    lines = ["## Diff", ""]
+    lines.extend(
+        [
+            "Comparison against the supplied baseline report. Finding IDs are stable across runs for the same normalized finding identity.",
+            "",
+        ]
+    )
+    for key, title in (
+        ("introduced", "Introduced Findings"),
+        ("resolved", "Resolved Findings"),
+        ("unchanged", "Unchanged Findings"),
+    ):
+        items = diff.get(key, [])
+        lines.extend([f"### {title}", ""])
+        if not isinstance(items, list) or not items:
+            lines.extend(["None.", ""])
+            continue
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            source = item.get("source_file", "")
+            source_detail = f" ({source})" if source else ""
+            lines.append(
+                "- {severity}: {category} {title}{source_detail} [{id}]".format(
+                    severity=item.get("severity", "low"),
+                    category=item.get("category", "finding"),
+                    title=item.get("title", "finding"),
+                    source_detail=source_detail,
+                    id=item.get("id", ""),
+                )
+            )
+        lines.append("")
     return lines
 
 

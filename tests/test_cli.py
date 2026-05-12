@@ -26,6 +26,8 @@ def test_cli_help_mentions_core_workflows(capsys):
     assert "--html" in help_text
     assert "--mermaid" in help_text
     assert "--sarif" in help_text
+    assert "--baseline" in help_text
+    assert "--fail-on-new" in help_text
     assert "Common workflows" in help_text
 
 
@@ -326,3 +328,109 @@ def test_cli_generates_sarif_when_requested(tmp_path):
             },
         }
     } in locations
+
+
+def test_cli_generates_diff_outputs_and_fails_on_new_threshold(tmp_path, capsys):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "agent.py").write_text(
+        "\n".join(
+            [
+                "import subprocess",
+                "from openai import OpenAI",
+                "OPENAI_API_KEY = 'do-not-store'",
+                "subprocess.run(['echo', 'hello'])",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(
+        json.dumps(
+            {
+                "repository": "baseline",
+                "providers": [],
+                "capabilities": [],
+                "secret_references": [],
+                "policy_findings": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "out"
+
+    result = main(
+        [
+            "scan",
+            str(project),
+            "--output-dir",
+            str(output_dir),
+            "--baseline",
+            str(baseline),
+            "--fail-on-new",
+            "high",
+            "--html",
+            "--sarif",
+            "--pretty",
+        ]
+    )
+
+    assert result == 1
+    captured = capsys.readouterr()
+    assert "New findings at or above high severity were introduced." in captured.err
+
+    data = json.loads((output_dir / "agentbom.json").read_text(encoding="utf-8"))
+    markdown = (output_dir / "agentbom.md").read_text(encoding="utf-8")
+    html = (output_dir / "agentbom.html").read_text(encoding="utf-8")
+    sarif = json.loads((output_dir / "agentbom.sarif").read_text(encoding="utf-8"))
+
+    introduced = {
+        (item["category"], item["title"], item["severity"])
+        for item in data["diff"]["introduced"]
+    }
+    assert ("providers", "openai", "low") in introduced
+    assert ("capabilities", "shell", "high") in introduced
+    assert ("secret_references", "OPENAI_API_KEY", "high") in introduced
+    assert "Introduced Findings" in markdown
+    assert "diff" in html
+    assert "Introduced Findings" in html
+    assert any(
+        result["ruleId"].startswith("diff.introduced.capabilities.")
+        for result in sarif["runs"][0]["results"]
+    )
+
+
+def test_cli_fail_on_new_allows_lower_severity_introductions(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "agent.py").write_text("from openai import OpenAI\n", encoding="utf-8")
+
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(
+        json.dumps(
+            {
+                "repository": "baseline",
+                "providers": [],
+                "capabilities": [],
+                "secret_references": [],
+                "policy_findings": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = main(
+        [
+            "scan",
+            str(project),
+            "--output-dir",
+            str(tmp_path / "out"),
+            "--baseline",
+            str(baseline),
+            "--fail-on-new",
+            "medium",
+        ]
+    )
+
+    assert result == 0

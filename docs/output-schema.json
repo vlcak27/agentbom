@@ -102,6 +102,9 @@
       "items": {
         "$ref": "#/$defs/risk"
       }
+    },
+    "diff": {
+      "$ref": "#/$defs/diff"
     }
   },
   "$defs": {
@@ -195,6 +198,7 @@
           "enum": [
             "ai_framework",
             "mcp",
+            "provider_sdk",
             "sandbox_runtime"
           ]
         },
@@ -380,6 +384,78 @@
             "enables",
             "reaches"
           ]
+        }
+      }
+    },
+    "diff": {
+      "type": "object",
+      "required": [
+        "baseline_repository",
+        "current_repository",
+        "introduced",
+        "resolved",
+        "unchanged"
+      ],
+      "properties": {
+        "baseline_repository": {
+          "type": "string"
+        },
+        "current_repository": {
+          "type": "string"
+        },
+        "introduced": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/diff_finding"
+          }
+        },
+        "resolved": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/diff_finding"
+          }
+        },
+        "unchanged": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/diff_finding"
+          }
+        }
+      }
+    },
+    "diff_finding": {
+      "type": "object",
+      "required": [
+        "id",
+        "category",
+        "title",
+        "source_file",
+        "severity"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "source_file": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "message": {
+          "type": "string"
         }
       }
     }

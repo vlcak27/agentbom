@@ -8,6 +8,7 @@ from pathlib import Path
 
 from . import __version__
 from .cyclonedx import write_cyclonedx_report
+from .diff import attach_diff, has_new_findings_at_or_above, load_baseline_report, valid_severities
 from .html_report import write_html_report
 from .mermaid import write_mermaid_report
 from .report import write_reports
@@ -55,6 +56,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="directory for generated reports (default: current directory)",
     )
     scan_parser.add_argument("--policy", help="custom AgentBOM YAML policy file")
+    scan_parser.add_argument("--baseline", help="baseline AgentBOM JSON report for diff output")
+    scan_parser.add_argument(
+        "--fail-on-new",
+        choices=valid_severities(),
+        help="exit nonzero when introduced diff findings meet or exceed this severity",
+    )
     scan_parser.add_argument("--pretty", action="store_true", help="pretty-print JSON reports")
     scan_parser.add_argument("--cyclonedx", action="store_true", help="write agentbom.cdx.json")
     scan_parser.add_argument("--html", action="store_true", help="write offline agentbom.html")
@@ -68,8 +75,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "scan":
+        if args.fail_on_new and not args.baseline:
+            parser.error("--fail-on-new requires --baseline")
         try:
             bom = scan_path(args.path, policy_path=args.policy)
+            if args.baseline:
+                attach_diff(bom, load_baseline_report(args.baseline))
             json_path, md_path = write_reports(bom, Path(args.output_dir), pretty=args.pretty)
             cyclonedx_path = None
             html_path = None
@@ -103,6 +114,14 @@ def main(argv: list[str] | None = None) -> int:
             severity = risk.get("severity", "unknown")
             score = risk.get("score", "unknown")
             print(f"Risk: {severity} ({score}/100)")
+        diff = bom.get("diff", {})
+        if isinstance(diff, dict) and args.fail_on_new:
+            if has_new_findings_at_or_above(diff, args.fail_on_new):
+                print(
+                    f"New findings at or above {args.fail_on_new} severity were introduced.",
+                    file=sys.stderr,
+                )
+                return 1
         return 0
 
     parser.error("unknown command")
