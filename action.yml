@@ -1,6 +1,6 @@
-name: "AgentBOM Security Scan"
+name: "AgentBOM AI Agent Security Scan"
 
-description: "Static security analysis for AI agent repositories"
+description: "Offline AI agent bill of materials and attack surface scanning"
 
 branding:
   icon: shield
@@ -8,16 +8,20 @@ branding:
 
 inputs:
   path:
-    description: "Path to scan"
+    description: "Repository path to scan"
     default: "."
 
   fail-on:
-    description: "critical | high | medium | low | none"
+    description: "Fail when repository risk is at or above: critical | high | medium | low | none"
     default: "critical"
 
   sarif-upload:
-    description: "Generate SARIF"
+    description: "Generate and upload SARIF to GitHub code scanning"
     default: "true"
+
+  html:
+    description: "Generate a self-contained HTML report"
+    default: "false"
 
   cyclonedx:
     description: "Generate CycloneDX"
@@ -56,6 +60,10 @@ runs:
           FLAGS="$FLAGS --sarif"
         fi
 
+        if [ "${{ inputs.html }}" = "true" ]; then
+          FLAGS="$FLAGS --html"
+        fi
+
         if [ "${{ inputs.cyclonedx }}" = "true" ]; then
           FLAGS="$FLAGS --cyclonedx"
         fi
@@ -70,11 +78,49 @@ runs:
         SCORE=$(python -c "import json; d=json.load(open('$REPORT')); print(d['repository_risk']['score'])")
         SEVERITY=$(python -c "import json; d=json.load(open('$REPORT')); print(d['repository_risk']['severity'])")
 
-        echo "risk-score=$SCORE" >> $GITHUB_OUTPUT
-        echo "risk-severity=$SEVERITY" >> $GITHUB_OUTPUT
+        echo "risk-score=$SCORE" >> "$GITHUB_OUTPUT"
+        echo "risk-severity=$SEVERITY" >> "$GITHUB_OUTPUT"
+
+        {
+          echo "## AgentBOM"
+          echo ""
+          echo "- Risk score: $SCORE"
+          echo "- Risk severity: $SEVERITY"
+          echo "- Report directory: ${{ inputs.output-dir }}"
+        } >> "$GITHUB_STEP_SUMMARY"
 
     - name: Upload SARIF
       if: inputs.sarif-upload == 'true'
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: ${{ inputs.output-dir }}/agentbom.sarif
+
+    - name: Enforce fail-on threshold
+      shell: bash
+      run: |
+        severity_rank() {
+          case "$1" in
+            low) echo 1 ;;
+            medium) echo 2 ;;
+            high) echo 3 ;;
+            critical) echo 4 ;;
+            none) echo 99 ;;
+            *) echo "invalid" ;;
+          esac
+        }
+
+        REPORT="${{ inputs.output-dir }}/agentbom.json"
+        SEVERITY=$(python -c "import json; d=json.load(open('$REPORT')); print(d['repository_risk']['severity'])")
+        FAIL_ON="${{ inputs.fail-on }}"
+        ACTUAL_RANK=$(severity_rank "$SEVERITY")
+        THRESHOLD_RANK=$(severity_rank "$FAIL_ON")
+
+        if [ "$ACTUAL_RANK" = "invalid" ] || [ "$THRESHOLD_RANK" = "invalid" ]; then
+          echo "Invalid fail-on value: $FAIL_ON" >&2
+          exit 2
+        fi
+
+        if [ "$FAIL_ON" != "none" ] && [ "$ACTUAL_RANK" -ge "$THRESHOLD_RANK" ]; then
+          echo "AgentBOM risk severity $SEVERITY meets fail-on threshold $FAIL_ON" >&2
+          exit 1
+        fi

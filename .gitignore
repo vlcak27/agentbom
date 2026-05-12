@@ -4,6 +4,11 @@ __pycache__/
 .ruff_cache/
 build/
 dist/
+*.egg-info/
 *.pyc
 agentbom.json
 agentbom.md
+agentbom.html
+agentbom.mmd
+agentbom.sarif
+agentbom.cdx.json

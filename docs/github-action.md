@@ -1,25 +1,27 @@
-name: AgentBOM Security Scan
+# GitHub Action
+
+The bundled action runs AgentBOM, uploads SARIF to GitHub code scanning, and can
+fail a workflow when repository risk meets a chosen threshold.
+
+```yaml
+name: AgentBOM
 
 on:
+  pull_request:
   push:
     branches: [main]
 
-  pull_request:
-
 permissions:
-  security-events: write
   contents: read
+  security-events: write
 
 jobs:
-  agentbom:
+  scan:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Run AgentBOM
-        id: agentbom
         uses: vlcak27/agentbom@v1
         with:
           path: .
@@ -33,4 +35,8 @@ jobs:
         with:
           name: agentbom-report
           path: agentbom-report/
-          if-no-files-found: error
+```
+
+Use `fail-on: none` when introducing AgentBOM to an existing repository and
+collecting a baseline. Raise the threshold after expected capabilities are
+documented.
