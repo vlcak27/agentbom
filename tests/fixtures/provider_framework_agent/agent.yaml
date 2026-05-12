@@ -1,0 +1,6 @@
+providers:
+  - openrouter
+  - ollama
+framework: langgraph
+environment:
+  OLLAMA_BASE_URL: http://localhost:11434

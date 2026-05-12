@@ -13,10 +13,25 @@ from typing import Protocol
 PROVIDERS = {
     "openai": ("openai", "OPENAI_API_KEY"),
     "anthropic": ("anthropic", "ANTHROPIC_API_KEY"),
-    "gemini": ("gemini", "google.generativeai", "GEMINI_API_KEY", "GOOGLE_API_KEY"),
+    "gemini": (
+        "gemini",
+        "google.generativeai",
+        "google.genai",
+        "@google/generative-ai",
+        "@google/genai",
+        "vertexai.generative_models",
+        "GEMINI_API_KEY",
+        "GOOGLE_API_KEY",
+        "GOOGLE_GENERATIVE_AI_API_KEY",
+    ),
+    "ollama": ("ollama", "OLLAMA_HOST", "OLLAMA_BASE_URL", "localhost:11434"),
+    "deepseek": ("deepseek", "DEEPSEEK_API_KEY", "api.deepseek.com"),
+    "openrouter": ("openrouter", "OPENROUTER_API_KEY", "openrouter.ai/api/v1"),
 }
 
 MODELS = (
+    "deepseek-reasoner",
+    "deepseek-chat",
     "gemini-2.0-flash",
     "gemini-1.5-pro",
     "claude-3-sonnet",
@@ -29,11 +44,13 @@ MODELS = (
     "gpt-4o",
     "gpt-4",
     "gpt-5",
+    "llama3.1",
     "llama3",
 )
 
 FRAMEWORKS = {
     "langchain": ("langchain",),
+    "langgraph": ("langgraph", "@langchain/langgraph"),
     "llamaindex": ("llama_index", "llamaindex"),
     "crewai": ("crewai",),
     "autogen": ("autogen", "pyautogen"),
@@ -56,6 +73,17 @@ DEPENDENCY_CATEGORIES = {
         "mcp",
         "fastmcp",
         "modelcontextprotocol",
+    },
+    "provider_sdk": {
+        "@google/genai",
+        "@google/generative-ai",
+        "anthropic",
+        "deepseek",
+        "google-genai",
+        "google-generativeai",
+        "ollama",
+        "openai",
+        "openrouter",
     },
     "sandbox_runtime": {
         "docker",
@@ -546,15 +574,17 @@ def _parse_python_ast(relpath: str, text: str | None) -> ast.AST | None:
 
 def _detect_python_providers(context: DetectionContext) -> list[dict[str, str]]:
     imports = _python_imports(context.tree)
-    names = _python_names_and_strings(context.tree)
     findings = []
     for provider, modules in {
         "openai": ("openai",),
         "anthropic": ("anthropic",),
-        "gemini": ("google.generativeai",),
+        "gemini": ("google.generativeai", "google.genai", "vertexai.generative_models"),
+        "ollama": ("ollama",),
+        "deepseek": ("deepseek",),
+        "openrouter": ("openrouter",),
     }.items():
-        if any(_module_matches(imported, modules) for imported in imports) or any(
-            pattern in names for pattern in PROVIDERS[provider]
+        if any(_module_matches(imported, modules) for imported in imports) or _text_has_pattern(
+            context.lower_text, PROVIDERS[provider]
         ):
             findings.append(
                 {
@@ -643,18 +673,6 @@ def _python_calls(tree: ast.AST | None) -> set[str]:
     return calls
 
 
-def _python_names_and_strings(tree: ast.AST | None) -> set[str]:
-    values: set[str] = set()
-    if tree is None:
-        return values
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Name):
-            values.add(node.id)
-        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
-            values.add(node.value)
-    return values
-
-
 def _call_name(node: ast.AST) -> str | None:
     if isinstance(node, ast.Name):
         return node.id
@@ -668,6 +686,10 @@ def _call_name(node: ast.AST) -> str | None:
 
 def _module_matches(imported: str, modules: tuple[str, ...]) -> bool:
     return any(imported == module or imported.startswith(f"{module}.") for module in modules)
+
+
+def _text_has_pattern(lower_text: str, patterns: tuple[str, ...]) -> bool:
+    return any(pattern.lower() in lower_text for pattern in patterns)
 
 
 def _has_python_network_access(imports: set[str], calls: set[str]) -> bool:

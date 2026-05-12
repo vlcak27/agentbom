@@ -111,9 +111,9 @@ See the [demo workflow](docs/demo-workflow.md) for a repeatable walkthrough.
 
 | Area | Examples |
 | --- | --- |
-| Providers | OpenAI, Anthropic, Gemini |
-| Models | `gpt-4o`, `gpt-4.1`, `claude-3-sonnet`, `gemini-2.0-flash` |
-| Frameworks | LangChain, LlamaIndex, CrewAI, AutoGen, Semantic Kernel |
+| Providers | OpenAI, Anthropic, Gemini, Ollama, DeepSeek, OpenRouter |
+| Models | `gpt-4o`, `gpt-4.1`, `claude-3-sonnet`, `gemini-2.0-flash`, `deepseek-chat`, `llama3.1` |
+| Frameworks | LangChain, LangGraph, LlamaIndex, CrewAI, AutoGen, Semantic Kernel |
 | MCP | `mcp.json`, `claude_desktop_config.json` |
 | Prompts | `AGENTS.md`, `CLAUDE.md`, `prompts/*.md`, prompt YAML |
 | Capabilities | shell, code execution, network, database, cloud, MCP tool invocation |

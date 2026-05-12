@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from agentbom.scanner import MAX_FILE_SIZE, scan_path
 
 
@@ -53,6 +55,44 @@ def test_provider_framework_detection_skips_docs(tmp_path):
     assert {"name": "anthropic", "path": "agent.yaml", "confidence": "medium"} in data["providers"]
     assert {"name": "crewai", "path": "agent.yaml", "confidence": "medium"} in data["frameworks"]
     assert {"name": "openai", "path": "agent.ts", "confidence": "high"} in data["providers"]
+
+
+def test_provider_framework_fixture_covers_new_sdk_and_env_patterns():
+    project = Path(__file__).parent / "fixtures" / "provider_framework_agent"
+
+    data = scan_path(project)
+
+    providers = {(item["name"], item["path"], item["confidence"]) for item in data["providers"]}
+    frameworks = {(item["name"], item["path"], item["confidence"]) for item in data["frameworks"]}
+    models = {(item["name"], item["source_file"], item["confidence"]) for item in data["models"]}
+    dependencies = {
+        (item["name"], item["category"], item["path"], item["confidence"])
+        for item in data["dependencies"]
+    }
+    secrets = {(item["name"], item["path"], item["confidence"]) for item in data["secret_references"]}
+
+    assert ("ollama", "ollama_agent.py", "high") in providers
+    assert ("deepseek", "deepseek_agent.py", "high") in providers
+    assert ("gemini", "gemini_langgraph_agent.py", "high") in providers
+    assert ("openrouter", "openrouter_agent.ts", "high") in providers
+    assert ("openrouter", "agent.yaml", "medium") in providers
+    assert ("langgraph", "gemini_langgraph_agent.py", "high") in frameworks
+    assert ("langgraph", "agent.yaml", "medium") in frameworks
+    assert ("llama3.1", "ollama_agent.py", "high") in models
+    assert ("deepseek-chat", "deepseek_agent.py", "high") in models
+    assert ("gemini-2.0-flash", "gemini_langgraph_agent.py", "high") in models
+    assert ("gpt-4o", "openrouter_agent.ts", "high") in models
+    assert ("google-genai", "provider_sdk", "requirements.txt", "low") in dependencies
+    assert ("ollama", "provider_sdk", "requirements.txt", "low") in dependencies
+    assert ("openrouter", "provider_sdk", "requirements.txt", "low") in dependencies
+    assert ("langgraph", "ai_framework", "requirements.txt", "low") in dependencies
+    assert ("DEEPSEEK_API_KEY", "deepseek_agent.py", "high") in secrets
+    assert (
+        "GOOGLE_GENERATIVE_AI_API_KEY",
+        "gemini_langgraph_agent.py",
+        "high",
+    ) in secrets
+    assert ("OPENROUTER_API_KEY", "openrouter_agent.ts", "high") in secrets
 
 
 def test_agents_md_is_prompt_only_for_ai_terms(tmp_path):
