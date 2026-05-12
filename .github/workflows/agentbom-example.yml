@@ -23,10 +23,15 @@ jobs:
         uses: vlcak27/agentbom@v0.5.1
         with:
           path: .
-          fail-on: high
+          # Public demo mode: surface findings in reports and GitHub code scanning,
+          # but do not fail CI on high or critical findings by default.
+          fail-on: none
           sarif-upload: true
           html: true
           output-dir: agentbom-report
+          # Enforcement examples for teams ready to gate merges:
+          # fail-on: high
+          # fail-on: critical
 
       - name: Upload AgentBOM reports
         uses: actions/upload-artifact@v4

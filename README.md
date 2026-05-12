@@ -190,13 +190,18 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run AgentBOM
-        uses: vlcak27/agentbom@v0.5.0
+        uses: vlcak27/agentbom@v0.5.1
         with:
           path: .
-          fail-on: high
+          # Informational mode for demos and first-time rollout:
+          # publish SARIF and reports without blocking CI on findings.
+          fail-on: none
           sarif-upload: true
           html: true
           output-dir: agentbom-report
+          # Enforcement examples for teams ready to gate merges:
+          # fail-on: high
+          # fail-on: critical
 
       - name: Upload AgentBOM reports
         uses: actions/upload-artifact@v4
@@ -204,6 +209,21 @@ jobs:
           name: agentbom-report
           path: agentbom-report/
 ```
+
+Operating modes:
+
+- Informational mode: use `fail-on: none` with `sarif-upload: true` and
+  `html: true`. Findings remain visible in GitHub code scanning through SARIF,
+  and JSON/Markdown/HTML reports are uploaded as artifacts, but the workflow does
+  not fail on high or critical risk.
+- Enforcement mode: keep SARIF and report artifacts enabled, then set
+  `fail-on: high` or `fail-on: critical` once the team has reviewed the baseline
+  and documented expected capabilities. This turns AgentBOM from visibility into
+  an explicit security policy.
+- CI blocking mode: protect branches with the AgentBOM workflow required. In
+  this mode, a configured `fail-on` threshold blocks merges when repository risk
+  meets or exceeds the threshold while still publishing SARIF and artifacts for
+  review.
 
 More details: [`docs/github-action.md`](docs/github-action.md).
 
