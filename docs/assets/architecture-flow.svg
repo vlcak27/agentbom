@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="560" viewBox="0 0 1120 560" role="img" aria-labelledby="title desc">
+  <title id="title">AgentBOM architecture flow</title>
+  <desc id="desc">Diagram showing file discovery, detectors, reachability inference, scoring, and report outputs.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5f6b7a"/>
+    </marker>
+  </defs>
+  <rect width="1120" height="560" fill="#f6f7f9"/>
+  <text x="560" y="62" text-anchor="middle" fill="#17202a" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="800">AgentBOM Static Analysis Pipeline</text>
+  <g font-family="Inter, Arial, sans-serif" font-size="16">
+    <rect x="66" y="142" width="178" height="98" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+    <text x="155" y="180" text-anchor="middle" fill="#17202a" font-size="18" font-weight="700">File Walk</text>
+    <text x="155" y="208" text-anchor="middle" fill="#5f6b7a">offline, no symlinks</text>
+    <rect x="306" y="142" width="178" height="98" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+    <text x="395" y="180" text-anchor="middle" fill="#17202a" font-size="18" font-weight="700">Text Filter</text>
+    <text x="395" y="208" text-anchor="middle" fill="#5f6b7a">skip binary &amp; large</text>
+    <rect x="546" y="142" width="178" height="98" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+    <text x="635" y="180" text-anchor="middle" fill="#17202a" font-size="18" font-weight="700">Detectors</text>
+    <text x="635" y="208" text-anchor="middle" fill="#5f6b7a">simple patterns</text>
+    <rect x="786" y="142" width="228" height="98" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+    <text x="900" y="180" text-anchor="middle" fill="#17202a" font-size="18" font-weight="700">Reachability</text>
+    <text x="900" y="208" text-anchor="middle" fill="#5f6b7a">actor to capability paths</text>
+    <line x1="244" y1="191" x2="300" y2="191" stroke="#5f6b7a" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="484" y1="191" x2="540" y2="191" stroke="#5f6b7a" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="724" y1="191" x2="780" y2="191" stroke="#5f6b7a" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="146" y="330" width="196" height="92" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+    <text x="244" y="366" text-anchor="middle" fill="#17202a" font-size="18" font-weight="700">Risk Scoring</text>
+    <text x="244" y="394" text-anchor="middle" fill="#5f6b7a">transparent rationale</text>
+    <rect x="462" y="330" width="196" height="92" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+    <text x="560" y="366" text-anchor="middle" fill="#17202a" font-size="18" font-weight="700">Capability Graph</text>
+    <text x="560" y="394" text-anchor="middle" fill="#5f6b7a">nodes and edges</text>
+    <rect x="778" y="330" width="196" height="92" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+    <text x="876" y="366" text-anchor="middle" fill="#17202a" font-size="18" font-weight="700">Reports</text>
+    <text x="876" y="394" text-anchor="middle" fill="#5f6b7a">JSON, MD, HTML, SARIF</text>
+    <line x1="900" y1="240" x2="900" y2="288" stroke="#5f6b7a" stroke-width="2"/>
+    <line x1="900" y1="288" x2="244" y2="288" stroke="#5f6b7a" stroke-width="2"/>
+    <line x1="244" y1="288" x2="244" y2="324" stroke="#5f6b7a" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="342" y1="376" x2="456" y2="376" stroke="#5f6b7a" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="658" y1="376" x2="772" y2="376" stroke="#5f6b7a" stroke-width="2" marker-end="url(#arrow)"/>
+  </g>
+</svg>

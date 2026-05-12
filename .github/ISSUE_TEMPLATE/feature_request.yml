@@ -1,0 +1,40 @@
+name: Feature request
+description: Suggest an adoption, detector, report, or integration improvement.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What review or adoption workflow is hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Onboarding
+        - Detector
+        - Report
+        - SARIF or CI
+        - GitHub Action
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints
+      options:
+        - label: This can preserve offline operation.
+        - label: This can preserve deterministic output.
+        - label: This can avoid new runtime dependencies.

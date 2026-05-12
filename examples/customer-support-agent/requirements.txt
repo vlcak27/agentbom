@@ -1,0 +1,2 @@
+langchain==0.2.16
+requests==2.32.3

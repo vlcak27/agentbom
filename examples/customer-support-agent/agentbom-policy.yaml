@@ -1,0 +1,7 @@
+deny_capabilities:
+  - shell_execution
+  - code_execution
+  - autonomous_execution
+
+require:
+  human_approval: true

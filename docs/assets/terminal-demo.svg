@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="620" viewBox="0 0 1120 620" role="img" aria-labelledby="title desc">
+  <title id="title">AgentBOM quickstart terminal demo</title>
+  <desc id="desc">Terminal-style screenshot showing install, scan, generated reports, and risk summary.</desc>
+  <rect width="1120" height="620" fill="#f6f7f9"/>
+  <rect x="64" y="52" width="992" height="516" rx="8" fill="#17202a"/>
+  <rect x="64" y="52" width="992" height="44" rx="8" fill="#243140"/>
+  <circle cx="92" cy="74" r="7" fill="#ef4444"/>
+  <circle cx="116" cy="74" r="7" fill="#f59e0b"/>
+  <circle cx="140" cy="74" r="7" fill="#22c55e"/>
+  <text x="560" y="80" text-anchor="middle" fill="#dbe2ea" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="15">AgentBOM quickstart</text>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="20">
+    <text x="96" y="142" fill="#8bd5ff">$ pip install ai-agentbom</text>
+    <text x="96" y="188" fill="#8bd5ff">$ agentbom scan examples/research-agent --output-dir agentbom-report --html --mermaid --sarif --pretty</text>
+    <text x="96" y="246" fill="#dbe2ea">Wrote agentbom-report/agentbom.json</text>
+    <text x="96" y="284" fill="#dbe2ea">Wrote agentbom-report/agentbom.md</text>
+    <text x="96" y="322" fill="#dbe2ea">Wrote agentbom-report/agentbom.html</text>
+    <text x="96" y="360" fill="#dbe2ea">Wrote agentbom-report/agentbom.mmd</text>
+    <text x="96" y="398" fill="#dbe2ea">Wrote agentbom-report/agentbom.sarif</text>
+    <text x="96" y="456" fill="#fca5a5">Risk: critical (100/100)</text>
+    <text x="96" y="514" fill="#a7f3d0">Open the HTML report or upload SARIF to code scanning.</text>
+  </g>
+</svg>

@@ -4,6 +4,19 @@ AgentBOM is a static bill-of-materials scanner for AI agent repositories. The lo
 
 The project should remain useful in local development, CI, and offline review environments. It favors simple static evidence over opaque scoring or generated summaries.
 
+![AgentBOM architecture flow](docs/assets/architecture-flow.svg)
+
+```mermaid
+flowchart LR
+  files[Repository files] --> filter[Text and size filter]
+  filter --> detectors[Pattern detectors]
+  detectors --> reachability[Reachability inference]
+  reachability --> graph[Capability graph]
+  reachability --> risk[Risk and policy scoring]
+  graph --> reports[Reports]
+  risk --> reports[JSON, Markdown, HTML, Mermaid, SARIF]
+```
+
 ## Core Concepts
 
 Providers are AI service vendors or runtime providers, such as OpenAI, Anthropic, or Google. A provider identifies who supplies a model or API surface, but it does not identify a specific model version.
@@ -63,6 +76,23 @@ AgentBOM models this attack surface in layers:
 - Risk layer: inferred review signals based on detected capabilities and missing controls.
 
 In early versions, this analysis is rule-based and conservative. It should prefer explainable findings with source files and confidence values over broad claims.
+
+## Differentiation From Traditional SAST
+
+Traditional SAST usually starts with language-specific vulnerability patterns.
+AgentBOM starts with the AI agent inventory and asks which agent actors appear
+connected to sensitive capabilities.
+
+The distinction matters because an AI agent review often needs evidence such as:
+
+- which model provider and model identifiers are present
+- which framework may route tool calls
+- whether prompt or MCP configuration surfaces exist
+- whether a capability is merely present or appears reachable from an AI actor
+- whether repository policy documents the expected control
+
+AgentBOM should stay complementary to SAST rather than becoming a general
+language vulnerability scanner.
 
 ## Roadmap Ideas
 

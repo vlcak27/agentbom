@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="720" viewBox="0 0 1120 720" role="img" aria-labelledby="title desc">
+  <title id="title">AgentBOM HTML report preview</title>
+  <desc id="desc">Preview of the AgentBOM HTML report with risk summary, review priorities, metrics, and findings tables.</desc>
+  <rect width="1120" height="720" fill="#f6f7f9"/>
+  <rect x="54" y="44" width="1012" height="632" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+  <rect x="54" y="44" width="230" height="632" rx="8" fill="#17202a"/>
+  <text x="88" y="96" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="25" font-weight="700">AgentBOM</text>
+  <text x="88" y="124" fill="#b9c3d0" font-family="Inter, Arial, sans-serif" font-size="14">Offline AI agent review</text>
+  <g font-family="Inter, Arial, sans-serif" font-size="15">
+    <text x="88" y="178" fill="#ffffff">Overview</text>
+    <text x="88" y="222" fill="#dbe2ea">Review Priorities</text>
+    <text x="88" y="266" fill="#dbe2ea">Providers &amp; Models</text>
+    <text x="88" y="310" fill="#dbe2ea">Reachable Capabilities</text>
+    <text x="88" y="354" fill="#dbe2ea">Policy Findings</text>
+    <text x="88" y="398" fill="#dbe2ea">Capability Graph</text>
+  </g>
+  <text x="326" y="99" fill="#17202a" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700">Overview</text>
+  <rect x="920" y="72" width="88" height="28" rx="14" fill="#b91c1c"/>
+  <text x="964" y="92" text-anchor="middle" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="700">CRITICAL</text>
+  <text x="326" y="134" fill="#5f6b7a" font-family="Inter, Arial, sans-serif" font-size="16">Deterministic offline scan of AI components, capabilities, and policy gaps.</text>
+  <rect x="326" y="166" width="330" height="152" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+  <circle cx="402" cy="242" r="54" fill="none" stroke="#d6dde6" stroke-width="18"/>
+  <path d="M402 188 A54 54 0 1 1 351 260" fill="none" stroke="#b91c1c" stroke-width="18" stroke-linecap="round"/>
+  <text x="402" y="251" text-anchor="middle" fill="#17202a" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="800">100</text>
+  <text x="486" y="232" fill="#17202a" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700">Repository Risk</text>
+  <text x="486" y="260" fill="#5f6b7a" font-family="Inter, Arial, sans-serif" font-size="15">examples/research-agent</text>
+  <g font-family="Inter, Arial, sans-serif">
+    <rect x="676" y="166" width="128" height="68" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+    <text x="700" y="197" fill="#17202a" font-size="26" font-weight="800">1</text>
+    <text x="700" y="218" fill="#5f6b7a" font-size="14">Provider</text>
+    <rect x="822" y="166" width="128" height="68" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+    <text x="846" y="197" fill="#17202a" font-size="26" font-weight="800">3</text>
+    <text x="846" y="218" fill="#5f6b7a" font-size="14">Reachable</text>
+    <rect x="676" y="250" width="128" height="68" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+    <text x="700" y="281" fill="#17202a" font-size="26" font-weight="800">4</text>
+    <text x="700" y="302" fill="#5f6b7a" font-size="14">Policy</text>
+    <rect x="822" y="250" width="128" height="68" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+    <text x="846" y="281" fill="#17202a" font-size="26" font-weight="800">1</text>
+    <text x="846" y="302" fill="#5f6b7a" font-size="14">Secrets</text>
+  </g>
+  <text x="326" y="378" fill="#17202a" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">Review Priorities</text>
+  <rect x="326" y="404" width="684" height="86" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+  <text x="356" y="438" fill="#17202a" font-family="Inter, Arial, sans-serif" font-size="16">1. Review reachable code_execution from crewai in agent.py.</text>
+  <text x="356" y="468" fill="#17202a" font-family="Inter, Arial, sans-serif" font-size="16">2. Address prompt file detected without security policy.</text>
+  <text x="326" y="548" fill="#17202a" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">Reachable Capabilities</text>
+  <rect x="326" y="574" width="684" height="62" rx="8" fill="#ffffff" stroke="#d9e0e8"/>
+  <rect x="326" y="574" width="684" height="28" rx="8" fill="#f0f4f8"/>
+  <text x="350" y="593" fill="#405064" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700">CAPABILITY</text>
+  <text x="540" y="593" fill="#405064" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700">REACHABLE FROM</text>
+  <text x="766" y="593" fill="#405064" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700">RISK</text>
+  <text x="350" y="625" fill="#17202a" font-family="Inter, Arial, sans-serif" font-size="14">code_execution</text>
+  <text x="540" y="625" fill="#17202a" font-family="Inter, Arial, sans-serif" font-size="14">crewai</text>
+  <rect x="766" y="610" width="54" height="22" rx="11" fill="#c2410c"/>
+  <text x="793" y="626" text-anchor="middle" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="700">HIGH</text>
+</svg>

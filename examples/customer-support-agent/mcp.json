@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "crm-readonly": {
+      "command": "python",
+      "args": ["-m", "support_tools.crm_readonly"],
+      "env": {
+        "CRM_BASE_URL": "${CRM_BASE_URL}"
+      }
+    }
+  }
+}

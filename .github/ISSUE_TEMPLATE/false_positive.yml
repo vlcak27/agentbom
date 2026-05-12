@@ -1,0 +1,43 @@
+name: False positive or missed finding
+description: Report a detector result that seems wrong or incomplete.
+title: "[Detector]: "
+labels: ["detector", "triage"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Finding type
+      options:
+        - False positive
+        - Missed finding
+        - Unclear severity
+        - Unclear explanation
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Minimal non-sensitive sample
+      description: Paste the smallest code or config snippet that demonstrates the issue.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: AgentBOM output
+      description: Paste the relevant sanitized JSON, Markdown, SARIF, or HTML text.
+      render: text
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed secret values and private customer data.
+          required: true
