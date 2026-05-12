@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from . import __version__
+from . import SCHEMA_VERSION
 from .detectors import detect_in_file
 from .graph import build_capability_graph
 from .policy import has_human_approval_text, validate_custom_policy, validate_policies
@@ -58,7 +58,7 @@ def scan_path(path: str | Path, policy_path: str | Path | None = None) -> dict[s
         raise NotADirectoryError(f"path is not a directory: {root}")
 
     bom: dict[str, object] = {
-        "schema_version": __version__,
+        "schema_version": SCHEMA_VERSION,
         "repository": str(root),
         "generated_by": "agentbom",
         "models": [],

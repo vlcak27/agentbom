@@ -6,6 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from . import __version__
 from .cyclonedx import write_cyclonedx_report
 from .html_report import write_html_report
 from .mermaid import write_mermaid_report
@@ -15,17 +16,49 @@ from .scanner import scan_path
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="agentbom")
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    parser = argparse.ArgumentParser(
+        prog="agentbom",
+        description=(
+            "Generate an offline bill of materials and attack-surface report "
+            "for AI agent repositories."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  agentbom scan examples/simple_agent --pretty\n"
+            "  agentbom scan . --output-dir agentbom-report --html --mermaid --sarif\n"
+            "  agentbom scan . --policy agentbom-policy.yaml --sarif --pretty"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--version", action="version", version=f"agentbom {__version__}")
+    subparsers = parser.add_subparsers(dest="command", metavar="command", required=True)
 
-    scan_parser = subparsers.add_parser("scan", help="scan a repository")
-    scan_parser.add_argument("path", help="path to scan")
-    scan_parser.add_argument("--output-dir", default=".", help="directory for agentbom.json and agentbom.md")
-    scan_parser.add_argument("--policy", help="custom YAML policy file")
-    scan_parser.add_argument("--pretty", action="store_true", help="pretty-print JSON output")
+    scan_parser = subparsers.add_parser(
+        "scan",
+        help="scan a repository",
+        description=(
+            "Scan source and configuration files without executing project code, "
+            "then write deterministic AgentBOM reports."
+        ),
+        epilog=(
+            "Common workflows:\n"
+            "  agentbom scan . --pretty\n"
+            "  agentbom scan . --output-dir agentbom-report --html --mermaid\n"
+            "  agentbom scan . --output-dir agentbom-report --sarif --pretty"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    scan_parser.add_argument("path", help="repository directory to scan")
+    scan_parser.add_argument(
+        "--output-dir",
+        default=".",
+        help="directory for generated reports (default: current directory)",
+    )
+    scan_parser.add_argument("--policy", help="custom AgentBOM YAML policy file")
+    scan_parser.add_argument("--pretty", action="store_true", help="pretty-print JSON reports")
     scan_parser.add_argument("--cyclonedx", action="store_true", help="write agentbom.cdx.json")
-    scan_parser.add_argument("--html", action="store_true", help="write agentbom.html")
-    scan_parser.add_argument("--mermaid", action="store_true", help="write agentbom.mmd")
+    scan_parser.add_argument("--html", action="store_true", help="write offline agentbom.html")
+    scan_parser.add_argument("--mermaid", action="store_true", help="write agentbom.mmd graph")
     scan_parser.add_argument("--sarif", action="store_true", help="write agentbom.sarif")
     return parser
 
@@ -65,6 +98,11 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Wrote {mermaid_path}")
         if sarif_path is not None:
             print(f"Wrote {sarif_path}")
+        risk = bom.get("repository_risk", {})
+        if isinstance(risk, dict):
+            severity = risk.get("severity", "unknown")
+            score = risk.get("score", "unknown")
+            print(f"Risk: {severity} ({score}/100)")
         return 0
 
     parser.error("unknown command")

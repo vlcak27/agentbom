@@ -7,6 +7,19 @@ from pathlib import Path
 from typing import Any
 
 
+SECTION_DESCRIPTIONS = {
+    "Models": "Model identifiers found in code or configuration. These are the AI decision points reviewers should recognize.",
+    "Providers": "AI providers or SDKs referenced by the repository.",
+    "Frameworks": "Agent orchestration libraries that may route prompts, tools, memory, or callbacks.",
+    "MCP Config Files": "Model Context Protocol configuration files that may expose tools to an agent runtime.",
+    "Prompt Files": "Prompt and instruction files that can influence agent behavior.",
+    "Capabilities": "Static evidence of sensitive actions such as shell, network, cloud, database, or code execution.",
+    "Dependencies": "AI, MCP, or sandbox-related dependencies found in package manifests.",
+    "Secret References": "Credential names referenced by the repository. AgentBOM records names only, never values.",
+    "Risks": "Scanner-level review signals derived from the findings above. They are not exploit claims.",
+}
+
+
 def write_reports(bom: dict[str, Any], output_dir: str | Path, pretty: bool = False) -> tuple[Path, Path]:
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -29,6 +42,11 @@ def render_markdown(bom: dict[str, Any]) -> str:
         "",
     ]
 
+    lines.extend(_reader_guide_section())
+    lines.extend(_repository_risk_section(bom.get("repository_risk", {})))
+    lines.extend(_review_priorities_section(bom))
+    lines.extend(_reachable_capability_section(bom.get("reachable_capabilities", [])))
+    lines.extend(_policy_finding_section(bom.get("policy_findings", [])))
     lines.extend(_model_section(bom.get("models", [])))
     lines.extend(_section("Providers", bom.get("providers", bom.get("models", []))))
     lines.extend(_section("Frameworks", bom["frameworks"]))
@@ -36,16 +54,66 @@ def render_markdown(bom: dict[str, Any]) -> str:
     lines.extend(_section("Prompt Files", bom["prompts"]))
     lines.extend(_section("Capabilities", bom["capabilities"]))
     lines.extend(_dependency_section(bom.get("dependencies", [])))
-    lines.extend(_reachable_capability_section(bom.get("reachable_capabilities", [])))
-    lines.extend(_policy_finding_section(bom.get("policy_findings", [])))
     lines.extend(_section("Secret References", bom["secret_references"]))
-    lines.extend(_repository_risk_section(bom.get("repository_risk", {})))
     lines.extend(_risk_section(bom["risks"]))
     return "\n".join(lines).rstrip() + "\n"
 
 
+def _reader_guide_section() -> list[str]:
+    return [
+        "## How to read this report",
+        "",
+        "AgentBOM is an offline static scanner. It does not prove exploitability; it gives reviewers a repeatable map of AI-specific components, reachable capabilities, and missing controls.",
+        "",
+        "Start with repository risk, reachable capabilities, and policy findings. Then use the component sections to confirm which files introduced each signal.",
+        "",
+    ]
+
+
+def _review_priorities_section(bom: dict[str, Any]) -> list[str]:
+    priorities = _review_priorities(bom)
+    lines = ["## Review Priorities", ""]
+    if not priorities:
+        lines.extend(["No immediate review priorities detected.", ""])
+        return lines
+    for priority in priorities:
+        lines.append(f"- {priority}")
+    lines.append("")
+    return lines
+
+
+def _review_priorities(bom: dict[str, Any]) -> list[str]:
+    priorities: list[str] = []
+    for item in bom.get("reachable_capabilities", []):
+        if not isinstance(item, dict):
+            continue
+        if item.get("risk") == "high":
+            priorities.append(
+                "Review reachable {capability} from {reachable_from} in {source_file}.".format(
+                    capability=item.get("capability", "capability"),
+                    reachable_from=item.get("reachable_from", "agent actor"),
+                    source_file=item.get("source_file", "unknown file"),
+                )
+            )
+    for item in bom.get("policy_findings", []):
+        if not isinstance(item, dict):
+            continue
+        if item.get("severity") in {"critical", "high", "medium"}:
+            priorities.append(
+                "Address policy finding in {source_file}: {message}.".format(
+                    source_file=item.get("source_file", "unknown file"),
+                    message=item.get("message", "policy control needed"),
+                )
+            )
+    if bom.get("secret_references"):
+        priorities.append("Confirm referenced credentials are stored outside the repository.")
+    return priorities[:5]
+
+
 def _section(title: str, items: list[dict[str, str]]) -> list[str]:
     lines = [f"## {title}", ""]
+    if title in SECTION_DESCRIPTIONS:
+        lines.extend([SECTION_DESCRIPTIONS[title], ""])
     if not items:
         lines.extend(["None detected.", ""])
         return lines
@@ -63,6 +131,7 @@ def _section(title: str, items: list[dict[str, str]]) -> list[str]:
 
 def _model_section(items: list[dict[str, str]]) -> list[str]:
     lines = ["## Models", ""]
+    lines.extend([SECTION_DESCRIPTIONS["Models"], ""])
     if not items:
         lines.extend(["None detected.", ""])
         return lines
@@ -80,6 +149,12 @@ def _model_section(items: list[dict[str, str]]) -> list[str]:
 
 def _reachable_capability_section(items: list[dict[str, str]]) -> list[str]:
     lines = ["## Reachable Capabilities", ""]
+    lines.extend(
+        [
+            "Actor-to-capability relationships inferred from deterministic static evidence. These are the best starting points for security review because they connect AI components to sensitive actions.",
+            "",
+        ]
+    )
     if not items:
         lines.extend(["None detected.", ""])
         return lines
@@ -102,6 +177,7 @@ def _reachable_capability_section(items: list[dict[str, str]]) -> list[str]:
 
 def _dependency_section(items: list[dict[str, str]]) -> list[str]:
     lines = ["## Dependencies", ""]
+    lines.extend([SECTION_DESCRIPTIONS["Dependencies"], ""])
     if not items:
         lines.extend(["None detected.", ""])
         return lines
@@ -115,6 +191,12 @@ def _dependency_section(items: list[dict[str, str]]) -> list[str]:
 
 def _policy_finding_section(items: list[dict[str, str]]) -> list[str]:
     lines = ["## Policy Findings", ""]
+    lines.extend(
+        [
+            "Controls that appear missing or violated based on detected prompts, capabilities, MCP configuration, and any custom AgentBOM policy.",
+            "",
+        ]
+    )
     if not items:
         lines.extend(["None detected.", ""])
         return lines
@@ -126,6 +208,12 @@ def _policy_finding_section(items: list[dict[str, str]]) -> list[str]:
 
 def _repository_risk_section(item: dict[str, Any]) -> list[str]:
     lines = ["## Repository Risk", ""]
+    lines.extend(
+        [
+            "A compact review score derived from reachable capabilities, sensitive actions, credential references, and policy gaps.",
+            "",
+        ]
+    )
     score = item.get("score", 0)
     severity = item.get("severity", "low")
     lines.append(f"- Score: {score}")
@@ -141,6 +229,7 @@ def _repository_risk_section(item: dict[str, Any]) -> list[str]:
 
 def _risk_section(risks: list[dict[str, str]]) -> list[str]:
     lines = ["## Risks", ""]
+    lines.extend([SECTION_DESCRIPTIONS["Risks"], ""])
     if not risks:
         lines.extend(["None detected.", ""])
         return lines

@@ -5,19 +5,30 @@
   "type": "object",
   "required": [
     "schema_version",
+    "repository",
+    "generated_by",
     "providers",
     "models",
     "frameworks",
+    "mcp_servers",
+    "prompts",
     "capabilities",
     "dependencies",
     "reachable_capabilities",
     "capability_graph",
     "policy_findings",
     "repository_risk",
+    "secret_references",
     "risks"
   ],
   "properties": {
     "schema_version": {
+      "type": "string"
+    },
+    "repository": {
+      "type": "string"
+    },
+    "generated_by": {
       "type": "string"
     },
     "providers": {
@@ -36,6 +47,18 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/named_finding"
+      }
+    },
+    "mcp_servers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/named_finding"
+      }
+    },
+    "prompts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/prompt_finding"
       }
     },
     "capabilities": {
@@ -67,6 +90,12 @@
     },
     "repository_risk": {
       "$ref": "#/$defs/repository_risk"
+    },
+    "secret_references": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/named_finding"
+      }
     },
     "risks": {
       "type": "array",
@@ -127,6 +156,25 @@
         },
         "evidence": {
           "type": "string"
+        }
+      }
+    },
+    "prompt_finding": {
+      "type": "object",
+      "required": [
+        "path",
+        "type",
+        "confidence"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
         }
       }
     },

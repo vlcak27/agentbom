@@ -7,6 +7,8 @@ from pathlib import Path
 import re
 from typing import Any
 
+from . import __version__
+
 
 SARIF_VERSION = "2.1.0"
 SARIF_SCHEMA = "https://json.schemastore.org/sarif-2.1.0.json"
@@ -118,8 +120,8 @@ def render_sarif(bom: dict[str, Any]) -> dict[str, Any]:
                 "tool": {
                     "driver": {
                         "name": "AgentBOM",
-                        "informationUri": "https://github.com/agentbom/agentbom",
-                        "semanticVersion": str(bom.get("schema_version", "0.1.0")),
+                        "informationUri": "https://github.com/vlcak27/agentbom",
+                        "semanticVersion": __version__,
                         "rules": sorted_rules,
                     }
                 },

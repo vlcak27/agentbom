@@ -2,8 +2,31 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from agentbom.cli import main
 from agentbom.html_report import render_html
+
+
+def test_cli_version(capsys):
+    with pytest.raises(SystemExit) as exc:
+        main(["--version"])
+
+    assert exc.value.code == 0
+    assert "agentbom 0.5.0" in capsys.readouterr().out
+
+
+def test_cli_help_mentions_core_workflows(capsys):
+    with pytest.raises(SystemExit) as exc:
+        main(["scan", "--help"])
+
+    assert exc.value.code == 0
+    help_text = capsys.readouterr().out
+    assert "offline" in help_text
+    assert "--html" in help_text
+    assert "--mermaid" in help_text
+    assert "--sarif" in help_text
+    assert "Common workflows" in help_text
 
 
 def test_cli_generates_json_and_markdown(tmp_path):
@@ -149,6 +172,8 @@ def test_cli_generates_html_when_requested(tmp_path):
     assert "<link" not in html.lower()
     assert "AgentBOM Security Report" in html
     assert "Overview" in html
+    assert "Review Priorities" in html
+    assert "How to read this report" in html
     assert "Providers &amp; Models" in html
     assert "Reachable Capabilities" in html
     assert "Policy Findings" in html
@@ -251,7 +276,7 @@ def test_cli_generates_sarif_when_requested(tmp_path):
 
     assert sarif["version"] == "2.1.0"
     assert run["tool"]["driver"]["name"] == "AgentBOM"
-    assert run["tool"]["driver"]["semanticVersion"] == "0.1.0"
+    assert run["tool"]["driver"]["semanticVersion"] == "0.5.0"
 
     assert "risk.high" in rule_ids
     assert "risk.low" in rule_ids
