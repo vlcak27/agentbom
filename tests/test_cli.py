@@ -202,6 +202,22 @@ def test_html_report_escapes_bom_values():
             ],
             "models": [],
             "frameworks": [],
+            "mcp_servers": [
+                {
+                    "name": "<filesystem>",
+                    "path": "mcp.json",
+                    "confidence": "medium",
+                    "kind": "server",
+                    "parse_status": "parsed",
+                    "risk": "high",
+                    "risk_categories": ["filesystem_access"],
+                    "rationale": ["review <filesystem> access"],
+                    "command": "npx",
+                    "args": ["-y", "@modelcontextprotocol/server-filesystem"],
+                    "package": "@modelcontextprotocol/server-filesystem",
+                    "transport": "stdio",
+                }
+            ],
             "capabilities": [],
             "dependencies": [],
             "reachable_capabilities": [],
@@ -219,7 +235,10 @@ def test_html_report_escapes_bom_values():
 
     assert "&lt;unsafe&gt;" in html
     assert "&lt;openai&gt;" in html
+    assert "&lt;filesystem&gt;" in html
+    assert "@modelcontextprotocol/server-filesystem" in html
     assert "review &lt;prompt&gt; handling" in html
+    assert "review &lt;filesystem&gt; access" in html
     assert "<unsafe>" not in html
 
 
@@ -333,6 +352,14 @@ def test_cli_generates_sarif_when_requested(tmp_path):
             },
         }
     } in locations
+    assert all(
+        result.get("locations")
+        and all(
+            location.get("physicalLocation", {}).get("artifactLocation", {}).get("uri")
+            for location in result["locations"]
+        )
+        for result in results
+    )
 
 
 def test_sarif_emits_high_risk_mcp_server_findings(tmp_path):

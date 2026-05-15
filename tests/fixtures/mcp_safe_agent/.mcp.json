@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "docs-search": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory",
+        "--token",
+        "sk-do-not-store"
+      ],
+      "env": {
+        "DOCS_API_KEY": "sk-do-not-store"
+      }
+    },
+    "memory-cache": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    }
+  }
+}

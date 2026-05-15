@@ -46,7 +46,6 @@ RISK_PATTERNS = {
         "subprocess",
         "run_command",
         "bash",
-        "sh",
         "powershell",
         "cmd.exe",
         "desktop-commander",
@@ -91,8 +90,6 @@ RISK_PATTERNS = {
     "secrets_env_access": (
         "secret",
         "secrets",
-        "env",
-        "environment",
         "token",
         "api_key",
         "apikey",
@@ -102,6 +99,7 @@ RISK_PATTERNS = {
         "vault",
     ),
 }
+SHELL_COMMAND_NAMES = {"bash", "cmd", "cmd.exe", "powershell", "pwsh", "sh", "zsh"}
 
 
 def is_mcp_config_path(relpath: str) -> bool:
@@ -311,7 +309,7 @@ def _package_or_binary(command: str, args: list[str]) -> str:
 
 def _first_non_option(args: list[str]) -> str:
     for arg in args:
-        if not arg.startswith("-"):
+        if arg != "[redacted]" and not arg.startswith("-"):
             return arg
     return ""
 
@@ -343,23 +341,40 @@ def _risk_categories(
         if category == "secrets_env_access" and env_names:
             categories.append(category)
             continue
-        if any(pattern in haystack for pattern in RISK_PATTERNS[category]):
+        if _category_matches(category, haystack, command, args):
             categories.append(category)
     if not categories:
         categories.append("unknown_custom_server")
     return categories
 
 
+def _category_matches(
+    category: str,
+    haystack: str,
+    command: str,
+    args: list[str],
+) -> bool:
+    if category == "shell_process_execution" and _has_shell_command(command, args):
+        return True
+    return any(pattern in haystack for pattern in RISK_PATTERNS[category])
+
+
+def _has_shell_command(command: str, args: list[str]) -> bool:
+    command_name = PurePosixPath(command).name.lower()
+    if command_name in SHELL_COMMAND_NAMES:
+        return True
+    return any(arg.lower() in SHELL_COMMAND_NAMES for arg in args)
+
+
 def _safe_definition_context(definition: object) -> str:
     if not isinstance(definition, dict):
         return ""
-    keys = [str(key) for key in definition]
     values = []
     for key in ("url", "endpoint"):
         value = definition.get(key)
         if isinstance(value, str):
             values.append(_redact_url_value(value))
-    return " ".join(keys + values)
+    return " ".join(values)
 
 
 def _redact_url_value(value: str) -> str:

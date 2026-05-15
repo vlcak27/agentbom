@@ -135,6 +135,8 @@ def _add_mcp_nodes(graph: MermaidGraph, mcp_servers: object) -> None:
     for server in mcp_servers:
         if not isinstance(server, dict):
             continue
+        if server.get("kind") != "server":
+            continue
         name = str(server.get("name", "unknown"))
         risk = str(server.get("risk", "low"))
         graph.add_node(f"mcp_server:{name}", f"MCP Server: {name}", risk)
@@ -249,6 +251,8 @@ def _add_mcp_edges(graph: MermaidGraph, mcp_servers: object) -> None:
         return
     for server in mcp_servers:
         if not isinstance(server, dict):
+            continue
+        if server.get("kind") != "server":
             continue
         name = str(server.get("name", "unknown"))
         graph.add_edge(f"mcp_server:{name}", "capability:mcp_tool_invocation", "exposes")

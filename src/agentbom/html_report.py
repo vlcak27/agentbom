@@ -323,6 +323,7 @@ def _mcp_security(items: Any) -> str:
                 escape(str(finding.get("name", ""))),
                 escape(str(finding.get("path", ""))),
                 escape(str(finding.get("command", ""))),
+                escape(" ".join(str(value) for value in _list(finding.get("args")))),
                 escape(str(finding.get("package", ""))),
                 escape(str(finding.get("transport", ""))),
                 escape(", ".join(str(value) for value in _list(finding.get("env")))),
@@ -335,7 +336,7 @@ def _mcp_security(items: Any) -> str:
         '<section id="mcp" class="section">'
         "<h1>MCP Security Analysis</h1>"
         f'<p class="section-lede">{escape(SECTION_HELP["mcp"])}</p>'
-        f"{_table(['Name', 'Path', 'Command', 'Package', 'Transport', 'Env Names', 'Risk', 'Categories', 'Rationale'], rows, 'None detected.')}"
+        f"{_table(['Name', 'Path', 'Command', 'Args', 'Package', 'Transport', 'Env Names', 'Risk', 'Categories', 'Rationale'], rows, 'None detected.')}"
         "</section>"
     )
 

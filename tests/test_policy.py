@@ -107,6 +107,32 @@ def test_custom_policy_can_deny_mcp_servers_and_risk_categories(tmp_path):
     )
 
 
+def test_documented_policy_allows_high_risk_mcp_without_default_policy_gap(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "SECURITY.md").write_text(
+        "Human approval required for filesystem MCP tools.\n",
+        encoding="utf-8",
+    )
+    (project / "mcp.json").write_text(
+        """
+        {
+          "mcpServers": {
+            "filesystem": {
+              "command": "npx",
+              "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+            }
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    data = scan_path(project)
+
+    assert data["policy_findings"] == []
+
+
 def test_policy_yaml_supports_deny_alias():
     policy = parse_policy_yaml(
         "\n".join(

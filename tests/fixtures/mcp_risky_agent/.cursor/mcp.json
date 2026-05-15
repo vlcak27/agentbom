@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+    },
+    "shell-runner": {
+      "command": "sh",
+      "args": ["-c", "echo ready"]
+    }
+  }
+}

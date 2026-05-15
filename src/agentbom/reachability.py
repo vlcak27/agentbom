@@ -119,7 +119,7 @@ def infer_reachable_capabilities(
     capability_hits: list[dict[str, str]],
 ) -> list[dict[str, Any]]:
     """Connect model/framework/tool findings to capability hits."""
-    actors = _actors(models, frameworks, mcp_servers, prompts)
+    actors = _actors(models, frameworks, prompts)
     reachable = []
     for hit in capability_hits:
         for actor in _reachable_actors(hit, actors):
@@ -143,7 +143,6 @@ def infer_reachable_capabilities(
 def _actors(
     models: list[dict[str, str]],
     frameworks: list[dict[str, str]],
-    mcp_servers: list[dict[str, Any]],
     prompts: list[dict[str, str]],
 ) -> list[dict[str, str]]:
     actors = []
@@ -165,15 +164,6 @@ def _actors(
                 "confidence": framework["confidence"],
             }
         )
-    for server in mcp_servers:
-        actors.append(
-            {
-                "type": "tool",
-                "name": str(server["name"]),
-                "source_file": str(server["path"]),
-                "confidence": str(server["confidence"]),
-            }
-        )
     for prompt in prompts:
         actors.append(
             {
@@ -192,7 +182,7 @@ def _reachable_actors(
     same_file = [actor for actor in actors if actor["source_file"] == hit["source_file"]]
     if same_file:
         return same_file
-    for actor_type in ("model", "framework", "tool"):
+    for actor_type in ("model", "framework"):
         typed = [actor for actor in actors if actor["type"] == actor_type]
         if typed:
             return typed
@@ -250,7 +240,7 @@ def _mcp_reachable_capabilities(
     servers = [
         server
         for server in mcp_servers
-        if server.get("kind") == "server" or server.get("risk_categories")
+        if server.get("kind") == "server"
     ]
     if not servers or not (frameworks or prompts):
         return []

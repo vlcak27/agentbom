@@ -740,6 +740,131 @@ def test_mcp_output_order_is_deterministic(tmp_path):
     assert first["mcp_servers"] == second["mcp_servers"]
 
 
+def test_mcp_security_fixture_covers_safe_server_env_redaction_and_reachability():
+    project = Path(__file__).parent / "fixtures" / "mcp_safe_agent"
+
+    data = scan_path(project)
+
+    assert data["mcp_servers"] == [
+        {
+            "name": "docs-search",
+            "path": ".mcp.json",
+            "confidence": "medium",
+            "kind": "server",
+            "parse_status": "parsed",
+            "risk": "high",
+            "risk_categories": ["browser_network_access", "secrets_env_access"],
+            "rationale": [
+                "server name or config suggests browser or network access",
+                "server declares environment variables: DOCS_API_KEY",
+            ],
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-memory", "--token", "[redacted]"],
+            "env": ["DOCS_API_KEY"],
+            "transport": "stdio",
+            "package": "@modelcontextprotocol/server-memory",
+        },
+        {
+            "name": "memory-cache",
+            "path": ".mcp.json",
+            "confidence": "medium",
+            "kind": "server",
+            "parse_status": "parsed",
+            "risk": "low",
+            "risk_categories": ["unknown_custom_server"],
+            "rationale": ["custom or unknown MCP server: @modelcontextprotocol/server-memory"],
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-memory"],
+            "transport": "stdio",
+            "package": "@modelcontextprotocol/server-memory",
+        },
+    ]
+    assert "sk-do-not-store" not in str(data)
+    assert_reachable_contains(data["reachable_capabilities"], {
+        "capability": "mcp_tool_invocation",
+        "reachable_from": "prompt configuration",
+        "source_file": ".mcp.json",
+        "risk": "high",
+        "mcp_server": "docs-search",
+        "paths": ["tool_invocation"],
+    })
+
+
+def test_mcp_security_fixture_covers_nested_filesystem_shell_and_ordering():
+    project = Path(__file__).parent / "fixtures" / "mcp_risky_agent"
+
+    first = scan_path(project)
+    second = scan_path(project)
+    servers = {item["name"]: item for item in first["mcp_servers"]}
+
+    assert first["mcp_servers"] == second["mcp_servers"]
+    assert [item["name"] for item in first["mcp_servers"]] == [
+        "brave-search",
+        "filesystem",
+        "shell-runner",
+    ]
+    assert servers["brave-search"]["path"] == ".cursor/mcp.json"
+    assert servers["brave-search"]["risk"] == "medium"
+    assert servers["brave-search"]["risk_categories"] == ["browser_network_access"]
+    assert "shell_process_execution" not in servers["brave-search"]["risk_categories"]
+    assert servers["filesystem"]["risk_categories"] == ["filesystem_access"]
+    assert servers["shell-runner"]["risk_categories"] == ["shell_process_execution"]
+    assert {
+        "id": "mcp_server:filesystem",
+        "type": "mcp_server",
+        "name": "filesystem",
+    } in first["capability_graph"]["nodes"]
+    assert {
+        "source": "mcp_server:filesystem",
+        "target": "mcp_risk:filesystem_access",
+        "type": "risk",
+    } in first["capability_graph"]["edges"]
+
+
+def test_invalid_mcp_fixture_does_not_create_reachable_tool_invocation():
+    project = Path(__file__).parent / "fixtures" / "mcp_invalid_agent"
+
+    data = scan_path(project)
+
+    assert data["mcp_servers"] == [
+        {
+            "name": "claude_desktop_config.json",
+            "path": "claude_desktop_config.json",
+            "confidence": "medium",
+            "kind": "config_file",
+            "parse_status": "invalid_json",
+            "risk": "low",
+            "risk_categories": ["unknown_custom_server"],
+            "rationale": ["MCP config could not be parsed as JSON"],
+        }
+    ]
+    assert not any(
+        item.get("capability") == "mcp_tool_invocation"
+        for item in data["reachable_capabilities"]
+    )
+    assert not any(
+        item.get("type") == "mcp_server"
+        for item in data["capability_graph"]["nodes"]
+    )
+
+
+def test_mcp_config_alone_does_not_make_unrelated_code_reachable(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "mcp.json").write_text(
+        '{"mcpServers": {"filesystem": {"command": "npx", "args": ["@modelcontextprotocol/server-filesystem"]}}}',
+        encoding="utf-8",
+    )
+    (project / "tool.py").write_text("import subprocess\nsubprocess.run(['echo', 'hello'])\n", encoding="utf-8")
+
+    data = scan_path(project)
+
+    assert not any(
+        item.get("reachable_from") == "filesystem"
+        for item in data["reachable_capabilities"]
+    )
+
+
 def test_capability_graph_contains_nodes_and_edges(tmp_path):
     project = tmp_path / "agent"
     project.mkdir()

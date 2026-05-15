@@ -13,6 +13,7 @@ def build_capability_graph(
 ) -> dict[str, list[dict[str, str]]]:
     nodes: list[dict[str, str]] = []
     edges: list[dict[str, str]] = []
+    parsed_mcp_servers = _parsed_mcp_servers(mcp_servers)
 
     for provider in providers:
         _append_unique(nodes, _node("provider", provider["name"]))
@@ -20,14 +21,14 @@ def build_capability_graph(
         _append_unique(nodes, _node("model", model["name"]))
     for framework in frameworks:
         _append_unique(nodes, _node("framework", framework["name"]))
-    for server in mcp_servers:
+    for server in parsed_mcp_servers:
         _append_unique(nodes, _node("mcp_server", str(server["name"])))
         _append_unique(nodes, _node("capability", "mcp_tool_invocation"))
     for capability in capabilities:
         _append_unique(nodes, _node("capability", capability["name"]))
     for reachable in reachable_capabilities:
         _append_unique(nodes, _node("capability", reachable["capability"]))
-    for server in mcp_servers:
+    for server in parsed_mcp_servers:
         categories = server.get("risk_categories", [])
         if not isinstance(categories, list):
             continue
@@ -36,7 +37,7 @@ def build_capability_graph(
 
     _add_provider_edges(edges, providers, models)
     _add_reachability_edges(edges, models, frameworks, reachable_capabilities)
-    _add_mcp_edges(edges, mcp_servers)
+    _add_mcp_edges(edges, parsed_mcp_servers)
 
     return {
         "nodes": sorted(nodes, key=lambda item: (item["type"], item["id"])),
@@ -101,6 +102,12 @@ def _add_mcp_edges(
                 edges,
                 _edge(server_id, _node_id("mcp_risk", str(category)), "risk"),
             )
+
+
+def _parsed_mcp_servers(
+    mcp_servers: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    return [server for server in mcp_servers if server.get("kind") == "server"]
 
 
 def _node(node_type: str, name: str) -> dict[str, str]:

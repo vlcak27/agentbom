@@ -17,7 +17,8 @@ repositories.
 
 ## v0.6.0 MCP Security Analysis
 
-Status: in progress.
+Status: implemented and in pre-release audit. It is not released until the
+v0.6.0 version bump and tag are created.
 
 - Detect common MCP JSON config files, including `mcp.json`, `.mcp.json`,
   `claude_desktop_config.json`, and nested Cursor/Claude paths.
