@@ -80,6 +80,40 @@ def render_sarif(bom: dict[str, Any]) -> dict[str, Any]:
             source_file=item["source_file"],
         )
 
+    for server in bom.get("mcp_servers", []):
+        if not isinstance(server, dict) or server.get("risk") != "high":
+            continue
+        name = str(server.get("name", "unknown"))
+        categories = server.get("risk_categories", [])
+        if not isinstance(categories, list):
+            categories = []
+        category_text = ", ".join(str(category) for category in categories) or "high risk"
+        rule_id = f"mcp.high_risk_server.{_slug(name)}"
+        message = f"High-risk MCP server {name} exposes {category_text}"
+        _register_rule(
+            rules,
+            rule_id,
+            name=f"High-risk MCP server: {name}",
+            severity="high",
+            summary=f"MCP server {name} has high-risk tool exposure.",
+            help_text=(
+                "AgentBOM classifies MCP server risk from JSON configuration metadata "
+                "such as command, package, args, transport, and env variable names."
+            ),
+            remediation=(
+                "Remove the MCP server, restrict it with policy and sandboxing, or replace "
+                "it with a narrower server."
+            ),
+        )
+        _add_result(
+            grouped_results,
+            rule_id,
+            "high",
+            message,
+            source_file=str(server.get("path", "")),
+            properties={"agentbom.mcp_server": name},
+        )
+
     for finding in bom.get("policy_findings", []):
         severity = finding["severity"]
         rule_id = f"policy.{_slug(finding['message'])}"

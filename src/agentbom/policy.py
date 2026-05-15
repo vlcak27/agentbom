@@ -85,6 +85,18 @@ def validate_policies(
                 "source_file": server["path"],
             },
         )
+        if server.get("risk") == "high":
+            _append_unique(
+                findings,
+                {
+                    "severity": "high",
+                    "message": (
+                        "high-risk MCP server detected without policy restrictions: "
+                        f"{server['name']}"
+                    ),
+                    "source_file": server["path"],
+                },
+            )
 
     return findings
 
@@ -103,6 +115,16 @@ def validate_custom_policy(
         for item in policy.get("deny_capabilities", [])
         if (normalized := normalize_capability(str(item))) is not None
     }
+    denied_mcp_server_names = {
+        str(item).strip().lower()
+        for item in policy.get("deny_mcp_servers", [])
+        if str(item).strip()
+    }
+    denied_mcp_risk_categories = {
+        normalize_mcp_risk_category(str(item))
+        for item in policy.get("deny_mcp_risk_categories", [])
+        if normalize_mcp_risk_category(str(item)) is not None
+    }
     for capability in bom.get("capabilities", []):
         if not isinstance(capability, dict):
             continue
@@ -117,6 +139,39 @@ def validate_custom_policy(
                     "policy_id": "deny_capabilities",
                 },
             )
+
+    for server in bom.get("mcp_servers", []):
+        if not isinstance(server, dict):
+            continue
+        server_name = str(server.get("name", "")).lower()
+        if server_name in denied_mcp_server_names:
+            _append_unique(
+                findings,
+                {
+                    "severity": "high",
+                    "message": f"custom policy violation: denied MCP server {server_name}",
+                    "source_file": str(server.get("path", policy_file)),
+                    "policy_id": "deny_mcp_servers",
+                },
+            )
+        categories = server.get("risk_categories", [])
+        if not isinstance(categories, list):
+            continue
+        for category in categories:
+            normalized = normalize_mcp_risk_category(str(category))
+            if normalized in denied_mcp_risk_categories:
+                _append_unique(
+                    findings,
+                    {
+                        "severity": "high",
+                        "message": (
+                            "custom policy violation: denied MCP risk category "
+                            f"{normalized}"
+                        ),
+                        "source_file": str(server.get("path", policy_file)),
+                        "policy_id": "deny_mcp_risk_categories",
+                    },
+                )
 
     requirements = policy.get("require", {})
     if requirements.get("sandboxing") and not _has_sandboxing_dependency(bom):
@@ -166,15 +221,24 @@ def parse_policy_yaml(text: str) -> dict[str, object]:
                 section = "deny_capabilities"
             if section == "deny_capabilities":
                 policy.setdefault("deny_capabilities", [])
+            elif section in {"deny_mcp_servers", "deny_mcp_server_names"}:
+                section = "deny_mcp_servers"
+                policy.setdefault("deny_mcp_servers", [])
+            elif section == "deny_mcp_risk_categories":
+                policy.setdefault("deny_mcp_risk_categories", [])
             elif section == "require":
                 policy.setdefault("require", {})
             else:
                 section = None
             continue
-        if section == "deny_capabilities" and stripped.startswith("- "):
+        if section in {
+            "deny_capabilities",
+            "deny_mcp_servers",
+            "deny_mcp_risk_categories",
+        } and stripped.startswith("- "):
             value = stripped[2:].strip()
             if value:
-                policy["deny_capabilities"].append(value)  # type: ignore[union-attr]
+                policy[section].append(value)  # type: ignore[index, union-attr]
             continue
         if section == "require" and ":" in stripped:
             key, value = stripped.split(":", 1)
@@ -186,6 +250,34 @@ def parse_policy_yaml(text: str) -> dict[str, object]:
 
 def normalize_capability(value: str) -> str | None:
     return CAPABILITY_ALIASES.get(value.strip().lower().replace(" ", "_"))
+
+
+def normalize_mcp_risk_category(value: str) -> str | None:
+    normalized = value.strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "filesystem": "filesystem_access",
+        "filesystem_access": "filesystem_access",
+        "shell": "shell_process_execution",
+        "process": "shell_process_execution",
+        "shell_process": "shell_process_execution",
+        "shell_process_execution": "shell_process_execution",
+        "network": "browser_network_access",
+        "browser": "browser_network_access",
+        "browser_network": "browser_network_access",
+        "browser_network_access": "browser_network_access",
+        "database": "database_access",
+        "database_access": "database_access",
+        "cloud": "cloud_access",
+        "cloud_access": "cloud_access",
+        "secrets": "secrets_env_access",
+        "env": "secrets_env_access",
+        "secrets_env": "secrets_env_access",
+        "secrets_env_access": "secrets_env_access",
+        "unknown": "unknown_custom_server",
+        "custom": "unknown_custom_server",
+        "unknown_custom_server": "unknown_custom_server",
+    }
+    return aliases.get(normalized)
 
 
 def has_human_approval_text(text: str) -> bool:

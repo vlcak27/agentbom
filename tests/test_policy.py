@@ -68,6 +68,45 @@ def test_custom_policy_required_controls_can_pass(tmp_path):
     )
 
 
+def test_custom_policy_can_deny_mcp_servers_and_risk_categories(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "mcp.json").write_text(
+        """
+        {
+          "mcpServers": {
+            "filesystem": {
+              "command": "npx",
+              "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+            }
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+    policy = tmp_path / "policy.yaml"
+    policy.write_text(
+        "\n".join(
+            [
+                "deny_mcp_servers:",
+                "  - filesystem",
+                "deny_mcp_risk_categories:",
+                "  - filesystem_access",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    data = scan_path(project, policy_path=policy)
+    messages = {finding["message"] for finding in data["policy_findings"]}
+
+    assert "custom policy violation: denied MCP server filesystem" in messages
+    assert (
+        "custom policy violation: denied MCP risk category filesystem_access"
+        in messages
+    )
+
+
 def test_policy_yaml_supports_deny_alias():
     policy = parse_policy_yaml(
         "\n".join(

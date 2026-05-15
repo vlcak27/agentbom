@@ -8,7 +8,7 @@ AgentBOM should detect:
 - OpenAI provider and `gpt-4o`
 - LangChain framework usage
 - network and database capabilities
-- MCP configuration
+- MCP server metadata and risk categories from `mcp.json`
 - prompt surface
 - secret references by name only
 - policy documentation for controls

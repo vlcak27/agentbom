@@ -63,6 +63,8 @@ AgentBOM makes that review repeatable:
 
 - maps AI-specific components: providers, statically detected model identifiers,
   frameworks, prompts, and MCP configuration
+- analyzes MCP server definitions from JSON config, including command, args,
+  transport, package or binary, env variable names, and risk categories
 - connects agent actors to reachable capabilities such as shell, code execution,
   network, database, cloud, and MCP tool invocation
 - records source paths, confidence, and rationale for review
@@ -117,7 +119,8 @@ See the [demo workflow](docs/demo-workflow.md) for a repeatable walkthrough.
 | Providers | OpenAI, Anthropic, Gemini, Ollama, DeepSeek, OpenRouter |
 | Models | Static model identifiers such as `gpt-5.5`, `gpt-5.4-mini`, `gpt-4o-mini`, `o3`, `claude-opus-4.7`, `gemini-2.5-pro`, `deepseek-reasoner`, `llama3.3`, `qwen3`, `openrouter/openai/gpt-5.5` |
 | Frameworks | LangChain, LangGraph, LlamaIndex, CrewAI, AutoGen, Semantic Kernel |
-| MCP | `mcp.json`, `claude_desktop_config.json` |
+| MCP | `mcp.json`, `.mcp.json`, `claude_desktop_config.json`, nested Cursor/Claude MCP config paths |
+| MCP server risk | filesystem, shell/process, browser/network, database, cloud, secrets/env, unknown/custom servers |
 | Prompts | `AGENTS.md`, `CLAUDE.md`, `prompts/*.md`, prompt YAML |
 | Capabilities | shell, code execution, network, database, cloud, MCP tool invocation |
 | Policy gaps | prompt files, MCP config, shell/cloud access without policy documentation |
@@ -150,8 +153,35 @@ agentbom scan . --baseline agentbom-baseline.json --fail-on-new high --sarif --h
 ```
 
 `--fail-on-new` accepts `low`, `medium`, `high`, or `critical`. It only evaluates
-new providers, capabilities, secret references, and policy findings introduced
-since the baseline.
+new providers, capabilities, MCP servers, secret references, and policy findings
+introduced since the baseline.
+
+## MCP Security Analysis
+
+AgentBOM treats MCP configuration as a first-class attack surface. It detects
+common JSON MCP config files, parses server definitions without executing code
+or contacting networks, and records only safe metadata:
+
+- server name, source file, confidence, command, args, transport, and package or
+  binary name
+- env variable names only, never env values
+- deterministic risk categories for filesystem access, shell/process execution,
+  browser/network access, database access, cloud access, secrets/env access, and
+  unknown/custom servers
+- reachability when an agent framework or prompt configuration exists alongside
+  MCP server config
+
+High-risk MCP servers appear in Markdown, HTML, Mermaid, JSON, and SARIF output.
+Custom policy files can deny MCP server names or risk categories:
+
+```yaml
+deny_mcp_servers:
+  - filesystem
+
+deny_mcp_risk_categories:
+  - shell_process_execution
+  - secrets_env_access
+```
 
 ## Architecture
 
@@ -283,6 +313,10 @@ Example policy:
 deny_capabilities:
   - shell_execution
   - autonomous_execution
+
+deny_mcp_risk_categories:
+  - filesystem_access
+  - shell_process_execution
 
 require:
   sandboxing: true

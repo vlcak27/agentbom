@@ -6,7 +6,10 @@ from typing import Any
 
 
 def score_risks(
-    capabilities: list[dict[str, str]], prompts: list[dict[str, str]], has_policy: bool
+    capabilities: list[dict[str, str]],
+    prompts: list[dict[str, str]],
+    mcp_servers: list[dict[str, Any]],
+    has_policy: bool,
 ) -> list[dict[str, str]]:
     risks: list[dict[str, str]] = []
     capability_names = {item["name"] for item in capabilities}
@@ -33,6 +36,14 @@ def score_risks(
             {
                 "severity": "low",
                 "reason": "prompt files detected without a policy file",
+            }
+        )
+
+    if any(server.get("risk") == "high" for server in mcp_servers):
+        risks.append(
+            {
+                "severity": "high",
+                "reason": "high-risk MCP server detected",
             }
         )
 

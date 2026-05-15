@@ -8,7 +8,9 @@ intended to be executed.
 A controlled support automation example with an OpenAI/LangChain agent, a CRM
 API call, local ticket lookup, MCP configuration, prompt instructions, and a
 policy file. This is useful for demonstrating expected findings with documented
-controls.
+controls. Its `mcp.json` is also a minimal MCP Security Analysis example:
+AgentBOM records the server command and the `CRM_BASE_URL` env variable name
+without storing the value.
 
 ```bash
 agentbom scan examples/customer-support-agent --output-dir agentbom-report/support --html --mermaid --sarif --pretty

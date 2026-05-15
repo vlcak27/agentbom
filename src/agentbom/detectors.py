@@ -9,6 +9,7 @@ from pathlib import PurePosixPath
 import tomllib
 from typing import Protocol
 
+from .mcp import MCP_CONFIG_FILENAMES, analyze_mcp_config
 
 PROVIDERS = {
     "openai": ("openai", "OPENAI_API_KEY"),
@@ -134,7 +135,7 @@ CAPABILITY_REGEXES = {
     ),
 }
 
-MCP_CONFIG_NAMES = {"mcp.json", "claude_desktop_config.json"}
+MCP_CONFIG_NAMES = MCP_CONFIG_FILENAMES
 PROMPT_NAMES = {"AGENTS.md", "CLAUDE.md"}
 POLICY_NAMES = {"policy.md", "policies.md", "security.md", "permissions.md"}
 GENERIC_SECRET_NAMES = {"API_KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL", "PRIVATE_KEY"}
@@ -199,17 +200,12 @@ class McpConfigDetector:
     name = "mcp_config"
 
     def detect(self, context: DetectionContext) -> DetectionResult:
-        filename = PurePosixPath(context.relpath).name
-        if filename in MCP_CONFIG_NAMES:
-            return _result(
-                "mcp_servers",
-                {
-                    "name": filename,
-                    "path": context.relpath,
-                    "confidence": confidence_for_path(context.relpath),
-                },
-            )
-        return DetectionResult()
+        findings = analyze_mcp_config(
+            context.relpath,
+            context.text,
+            confidence_for_path(context.relpath),
+        )
+        return DetectionResult({"mcp_servers": findings}) if findings else DetectionResult()
 
 
 class PolicyDetector:

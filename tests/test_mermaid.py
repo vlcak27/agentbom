@@ -43,12 +43,16 @@ def test_mermaid_graph_contains_attack_surface_relationships():
     assert "Provider: openai" in mermaid
     assert "Model: gpt-4o" in mermaid
     assert "Framework: langchain" in mermaid
+    assert "MCP Server: filesystem" in mermaid
+    assert "MCP Risk: filesystem_access" in mermaid
     assert "Capability: code_execution" in mermaid
     assert "Reachable: langchain -&gt; code_execution" in mermaid
     assert "Policy: shell execution detected without restrictions" in mermaid
     assert " -- uses --> " in mermaid
     assert " -- enables --> " in mermaid
     assert " -- reaches --> " in mermaid
+    assert " -- exposes --> " in mermaid
+    assert " -- risk --> " in mermaid
     assert " -- policy --> " in mermaid
     assert "classDef low" in mermaid
     assert "classDef medium" in mermaid
@@ -126,6 +130,22 @@ def _sample_bom():
         ],
         "frameworks": [
             {"name": "langchain", "path": "agent.py", "confidence": "high"},
+        ],
+        "mcp_servers": [
+            {
+                "name": "filesystem",
+                "path": "mcp.json",
+                "confidence": "medium",
+                "kind": "server",
+                "parse_status": "parsed",
+                "risk": "high",
+                "risk_categories": ["filesystem_access"],
+                "rationale": ["server name or package suggests filesystem access"],
+                "command": "npx",
+                "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+                "package": "@modelcontextprotocol/server-filesystem",
+                "transport": "stdio",
+            },
         ],
         "capabilities": [
             {"name": "shell", "path": "agent.py", "confidence": "high"},

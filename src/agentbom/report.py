@@ -11,7 +11,7 @@ SECTION_DESCRIPTIONS = {
     "Models": "Model identifiers found in code or configuration. These are the AI decision points reviewers should recognize.",
     "Providers": "AI providers or SDKs referenced by the repository.",
     "Frameworks": "Agent orchestration libraries that may route prompts, tools, memory, or callbacks.",
-    "MCP Config Files": "Model Context Protocol configuration files that may expose tools to an agent runtime.",
+    "MCP Security Analysis": "Model Context Protocol servers and configuration files that may expose tools to an agent runtime.",
     "Prompt Files": "Prompt and instruction files that can influence agent behavior.",
     "Capabilities": "Static evidence of sensitive actions such as shell, network, cloud, database, or code execution.",
     "Dependencies": "AI, MCP, or sandbox-related dependencies found in package manifests.",
@@ -51,7 +51,7 @@ def render_markdown(bom: dict[str, Any]) -> str:
     lines.extend(_model_section(bom.get("models", [])))
     lines.extend(_section("Providers", bom.get("providers", bom.get("models", []))))
     lines.extend(_section("Frameworks", bom["frameworks"]))
-    lines.extend(_section("MCP Config Files", bom["mcp_servers"]))
+    lines.extend(_mcp_security_section(bom.get("mcp_servers", [])))
     lines.extend(_section("Prompt Files", bom["prompts"]))
     lines.extend(_section("Capabilities", bom["capabilities"]))
     lines.extend(_dependency_section(bom.get("dependencies", [])))
@@ -162,18 +162,73 @@ def _reachable_capability_section(items: list[dict[str, str]]) -> list[str]:
     for item in items:
         paths = item.get("paths", [])
         path_detail = f"; paths: {', '.join(paths)}" if isinstance(paths, list) and paths else ""
+        server = item.get("mcp_server")
+        server_detail = f"; MCP server: {server}" if server else ""
+        rationale = item.get("rationale", [])
+        rationale_detail = ""
+        if isinstance(rationale, list) and rationale:
+            rationale_detail = f"; rationale: {'; '.join(str(reason) for reason in rationale)}"
         score = item.get("confidence_score")
         score_detail = f"; score: {score}" if score is not None else ""
         lines.append(
             "- {capability} from {reachable_from} ({source_file}) "
-            "[{risk}, {confidence}{score_detail}{path_detail}]".format(
+            "[{risk}, {confidence}{score_detail}{path_detail}{server_detail}{rationale_detail}]".format(
                 score_detail=score_detail,
                 path_detail=path_detail,
+                server_detail=server_detail,
+                rationale_detail=rationale_detail,
                 **item,
             )
         )
     lines.append("")
     return lines
+
+
+def _mcp_security_section(items: list[dict[str, object]]) -> list[str]:
+    lines = ["## MCP Security Analysis", ""]
+    lines.extend([SECTION_DESCRIPTIONS["MCP Security Analysis"], ""])
+    if not items:
+        lines.extend(["None detected.", ""])
+        return lines
+    for item in items:
+        name = str(item.get("name", "mcp"))
+        path = str(item.get("path", ""))
+        confidence = str(item.get("confidence", ""))
+        risk = str(item.get("risk", "low"))
+        status = str(item.get("parse_status", "detected"))
+        categories = item.get("risk_categories", [])
+        category_detail = ""
+        if isinstance(categories, list) and categories:
+            category_detail = f"; categories: {', '.join(str(category) for category in categories)}"
+        metadata = _mcp_metadata(item)
+        rationale = item.get("rationale", [])
+        rationale_detail = ""
+        if isinstance(rationale, list) and rationale:
+            rationale_detail = f"; rationale: {'; '.join(str(reason) for reason in rationale)}"
+        lines.append(
+            f"- {name} ({path}) [{risk}, {confidence}, {status}{category_detail}{metadata}{rationale_detail}]"
+        )
+    lines.append("")
+    return lines
+
+
+def _mcp_metadata(item: dict[str, object]) -> str:
+    parts = []
+    for key, label in (
+        ("command", "command"),
+        ("package", "package"),
+        ("transport", "transport"),
+    ):
+        value = item.get(key)
+        if isinstance(value, str) and value:
+            parts.append(f"{label}: {value}")
+    args = item.get("args")
+    if isinstance(args, list) and args:
+        parts.append(f"args: {' '.join(str(arg) for arg in args)}")
+    env = item.get("env")
+    if isinstance(env, list) and env:
+        parts.append(f"env: {', '.join(str(name) for name in env)}")
+    return f"; {'; '.join(parts)}" if parts else ""
 
 
 def _dependency_section(items: list[dict[str, str]]) -> list[str]:

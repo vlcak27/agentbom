@@ -10,16 +10,31 @@ repositories.
 
 ## Current Focus
 
-- Improve detector accuracy without executing scanned code.
-- Improve explanations for mixed engineering, security, and governance reviews.
+- v0.6.0: MCP Security Analysis as the next major differentiator.
+- Keep detector accuracy improvements offline and deterministic.
 - Keep report outputs stable and easy to diff.
 - Make CI adoption simple without requiring hosted services.
+
+## v0.6.0 MCP Security Analysis
+
+Status: in progress.
+
+- Detect common MCP JSON config files, including `mcp.json`, `.mcp.json`,
+  `claude_desktop_config.json`, and nested Cursor/Claude paths.
+- Parse MCP server definitions safely without code execution or network access.
+- Extract server name, command, args, transport, package or binary, and env
+  variable names only.
+- Classify MCP server risk across filesystem, shell/process, browser/network,
+  database, cloud, secrets/env, and unknown/custom categories.
+- Connect MCP server config to reachable `mcp_tool_invocation` findings when an
+  agent framework or prompt configuration is present.
+- Include MCP security analysis in JSON, Markdown, HTML, Mermaid, and SARIF.
+- Support simple custom policy denies for MCP server names and risk categories.
 
 ## Near-Term Candidates
 
 - More package and configuration parsing with standard-library parsers where
   possible.
-- Better MCP transport and command classification.
 - More precise framework-to-tool registration patterns.
 - Policy allowlists for expected capabilities.
 - Baseline comparison for existing repositories.

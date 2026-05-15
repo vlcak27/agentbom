@@ -17,6 +17,12 @@ CAPABILITY_SEVERITY = {
     "code_execution": "high",
     "database": "medium",
     "mcp_tool_invocation": "medium",
+    "filesystem_access": "high",
+    "shell_process_execution": "high",
+    "browser_network_access": "medium",
+    "database_access": "medium",
+    "secrets_env_access": "high",
+    "unknown_custom_server": "low",
     "network": "medium",
     "network_access": "medium",
     "shell": "high",
@@ -37,6 +43,7 @@ def render_mermaid(bom: dict[str, Any]) -> str:
     _add_finding_nodes(graph, "provider", "Provider", bom.get("providers", []))
     _add_model_nodes(graph, bom.get("models", []))
     _add_finding_nodes(graph, "framework", "Framework", bom.get("frameworks", []))
+    _add_mcp_nodes(graph, bom.get("mcp_servers", []))
     _add_capability_nodes(graph, bom.get("capabilities", []))
     _add_reachable_nodes(graph, bom.get("reachable_capabilities", []))
     _add_policy_nodes(graph, bom.get("policy_findings", []), bom.get("capabilities", []))
@@ -45,8 +52,10 @@ def render_mermaid(bom: dict[str, Any]) -> str:
         graph,
         bom.get("models", []),
         bom.get("frameworks", []),
+        bom.get("mcp_servers", []),
         bom.get("reachable_capabilities", []),
     )
+    _add_mcp_edges(graph, bom.get("mcp_servers", []))
     return graph.render()
 
 
@@ -120,6 +129,32 @@ def _add_capability_nodes(graph: MermaidGraph, capabilities: object) -> None:
         )
 
 
+def _add_mcp_nodes(graph: MermaidGraph, mcp_servers: object) -> None:
+    if not isinstance(mcp_servers, list):
+        return
+    for server in mcp_servers:
+        if not isinstance(server, dict):
+            continue
+        name = str(server.get("name", "unknown"))
+        risk = str(server.get("risk", "low"))
+        graph.add_node(f"mcp_server:{name}", f"MCP Server: {name}", risk)
+        graph.add_node(
+            "capability:mcp_tool_invocation",
+            "Capability: mcp_tool_invocation",
+            "medium",
+        )
+        categories = server.get("risk_categories", [])
+        if not isinstance(categories, list):
+            continue
+        for category in categories:
+            category_name = str(category)
+            graph.add_node(
+                f"mcp_risk:{category_name}",
+                f"MCP Risk: {category_name}",
+                CAPABILITY_SEVERITY.get(category_name, "low"),
+            )
+
+
 def _add_reachable_nodes(graph: MermaidGraph, reachable_capabilities: object) -> None:
     if not isinstance(reachable_capabilities, list):
         return
@@ -182,12 +217,14 @@ def _add_reachability_edges(
     graph: MermaidGraph,
     models: object,
     frameworks: object,
+    mcp_servers: object,
     reachable_capabilities: object,
 ) -> None:
     if not isinstance(reachable_capabilities, list):
         return
     model_names = _names(models)
     framework_names = _names(frameworks)
+    mcp_names = _names(mcp_servers)
     for reachable in reachable_capabilities:
         if not isinstance(reachable, dict):
             continue
@@ -201,7 +238,25 @@ def _add_reachability_edges(
         if actor in framework_names:
             graph.add_edge(f"framework:{actor}", reachable_key, "reaches")
             graph.add_edge(f"framework:{actor}", capability_key, "enables")
+        server = str(reachable.get("mcp_server", ""))
+        if server in mcp_names:
+            graph.add_edge(f"mcp_server:{server}", reachable_key, "reachable")
         graph.add_edge(reachable_key, capability_key, "reaches")
+
+
+def _add_mcp_edges(graph: MermaidGraph, mcp_servers: object) -> None:
+    if not isinstance(mcp_servers, list):
+        return
+    for server in mcp_servers:
+        if not isinstance(server, dict):
+            continue
+        name = str(server.get("name", "unknown"))
+        graph.add_edge(f"mcp_server:{name}", "capability:mcp_tool_invocation", "exposes")
+        categories = server.get("risk_categories", [])
+        if not isinstance(categories, list):
+            continue
+        for category in categories:
+            graph.add_edge(f"mcp_server:{name}", f"mcp_risk:{category}", "risk")
 
 
 def _capability_keys_by_path(capabilities: object) -> dict[str, list[str]]:

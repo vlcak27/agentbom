@@ -10,6 +10,7 @@ from typing import Any
 SECTION_HELP = {
     "providers-models": "AI providers and concrete model identifiers found in source or configuration.",
     "frameworks": "Agent frameworks that may route prompts, memory, tools, callbacks, or autonomous loops.",
+    "mcp": "MCP servers and config files that may expose tools to an agent runtime.",
     "reachable": "Inferred actor-to-capability paths. These are the most important rows for security review.",
     "policy": "Missing controls or custom policy violations that should be resolved or accepted explicitly.",
     "prompts": "Prompt and instruction files that may influence agent behavior.",
@@ -53,6 +54,7 @@ def render_html(bom: dict[str, Any]) -> str:
             _review_priorities(bom),
             _providers_and_models(bom),
             _named_section("Frameworks", "frameworks", bom.get("frameworks", [])),
+            _mcp_security(bom.get("mcp_servers", [])),
             _reachable_capabilities(bom.get("reachable_capabilities", [])),
             _policy_findings(bom.get("policy_findings", [])),
             _prompt_surfaces(bom.get("prompts", [])),
@@ -75,6 +77,7 @@ def _sidebar() -> str:
         ("Review Priorities", "priorities"),
         ("Providers & Models", "providers-models"),
         ("Frameworks", "frameworks"),
+        ("MCP Security Analysis", "mcp"),
         ("Reachable Capabilities", "reachable"),
         ("Policy Findings", "policy"),
         ("Prompt Injection Surfaces", "prompts"),
@@ -103,9 +106,9 @@ def _overview(
         ("Providers", len(_list(bom.get("providers")))),
         ("Models", len(_list(bom.get("models")))),
         ("Frameworks", len(_list(bom.get("frameworks")))),
+        ("MCP", len(_list(bom.get("mcp_servers")))),
         ("Reachable", len(_list(bom.get("reachable_capabilities")))),
         ("Policy", len(_list(bom.get("policy_findings")))),
-        ("Secrets", len(_list(bom.get("secret_references")))),
     ]
     cards = "\n".join(
         (
@@ -311,6 +314,32 @@ def _named_rows(items: Any) -> list[list[str]]:
     ]
 
 
+def _mcp_security(items: Any) -> str:
+    rows = []
+    for item in _list(items):
+        finding = _dict(item)
+        rows.append(
+            [
+                escape(str(finding.get("name", ""))),
+                escape(str(finding.get("path", ""))),
+                escape(str(finding.get("command", ""))),
+                escape(str(finding.get("package", ""))),
+                escape(str(finding.get("transport", ""))),
+                escape(", ".join(str(value) for value in _list(finding.get("env")))),
+                _badge(str(finding.get("risk", ""))),
+                escape(", ".join(str(value) for value in _list(finding.get("risk_categories")))),
+                escape("; ".join(str(value) for value in _list(finding.get("rationale")))),
+            ]
+        )
+    return (
+        '<section id="mcp" class="section">'
+        "<h1>MCP Security Analysis</h1>"
+        f'<p class="section-lede">{escape(SECTION_HELP["mcp"])}</p>'
+        f"{_table(['Name', 'Path', 'Command', 'Package', 'Transport', 'Env Names', 'Risk', 'Categories', 'Rationale'], rows, 'None detected.')}"
+        "</section>"
+    )
+
+
 def _reachable_capabilities(items: Any) -> str:
     rows = []
     for item in _list(items):
@@ -327,13 +356,15 @@ def _reachable_capabilities(items: Any) -> str:
                 _badge(str(finding.get("confidence", "")), "confidence"),
                 escape(str(finding.get("confidence_score", ""))),
                 escape(", ".join(str(path) for path in paths)),
+                escape(str(finding.get("mcp_server", ""))),
+                escape("; ".join(str(value) for value in _list(finding.get("rationale")))),
             ]
         )
     return (
         '<section id="reachable" class="section">'
         "<h1>Reachable Capabilities</h1>"
         f'<p class="section-lede">{escape(SECTION_HELP["reachable"])}</p>'
-        f"{_table(['Capability', 'Reachable From', 'Source File', 'Risk', 'Confidence', 'Score', 'Paths'], rows, 'None detected.')}"
+        f"{_table(['Capability', 'Reachable From', 'Source File', 'Risk', 'Confidence', 'Score', 'Paths', 'MCP Server', 'Rationale'], rows, 'None detected.')}"
         "</section>"
     )
 

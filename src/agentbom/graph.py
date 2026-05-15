@@ -7,6 +7,7 @@ def build_capability_graph(
     providers: list[dict[str, str]],
     models: list[dict[str, str]],
     frameworks: list[dict[str, str]],
+    mcp_servers: list[dict[str, object]],
     capabilities: list[dict[str, str]],
     reachable_capabilities: list[dict[str, str]],
 ) -> dict[str, list[dict[str, str]]]:
@@ -19,13 +20,23 @@ def build_capability_graph(
         _append_unique(nodes, _node("model", model["name"]))
     for framework in frameworks:
         _append_unique(nodes, _node("framework", framework["name"]))
+    for server in mcp_servers:
+        _append_unique(nodes, _node("mcp_server", str(server["name"])))
+        _append_unique(nodes, _node("capability", "mcp_tool_invocation"))
     for capability in capabilities:
         _append_unique(nodes, _node("capability", capability["name"]))
     for reachable in reachable_capabilities:
         _append_unique(nodes, _node("capability", reachable["capability"]))
+    for server in mcp_servers:
+        categories = server.get("risk_categories", [])
+        if not isinstance(categories, list):
+            continue
+        for category in categories:
+            _append_unique(nodes, _node("mcp_risk", str(category)))
 
     _add_provider_edges(edges, providers, models)
     _add_reachability_edges(edges, models, frameworks, reachable_capabilities)
+    _add_mcp_edges(edges, mcp_servers)
 
     return {
         "nodes": sorted(nodes, key=lambda item: (item["type"], item["id"])),
@@ -70,6 +81,26 @@ def _add_reachability_edges(
             framework_id = _node_id("framework", actor)
             _append_unique(edges, _edge(framework_id, capability_id, "enables"))
             _append_unique(edges, _edge(framework_id, capability_id, "reaches"))
+
+
+def _add_mcp_edges(
+    edges: list[dict[str, str]],
+    mcp_servers: list[dict[str, object]],
+) -> None:
+    for server in mcp_servers:
+        server_id = _node_id("mcp_server", str(server["name"]))
+        _append_unique(
+            edges,
+            _edge(server_id, _node_id("capability", "mcp_tool_invocation"), "exposes"),
+        )
+        categories = server.get("risk_categories", [])
+        if not isinstance(categories, list):
+            continue
+        for category in categories:
+            _append_unique(
+                edges,
+                _edge(server_id, _node_id("mcp_risk", str(category)), "risk"),
+            )
 
 
 def _node(node_type: str, name: str) -> dict[str, str]:

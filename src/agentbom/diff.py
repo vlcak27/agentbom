@@ -9,7 +9,13 @@ import re
 from typing import Any
 
 
-DIFF_CATEGORIES = ("providers", "capabilities", "secret_references", "policy_findings")
+DIFF_CATEGORIES = (
+    "providers",
+    "capabilities",
+    "mcp_servers",
+    "secret_references",
+    "policy_findings",
+)
 SEVERITY_ORDER = {"low": 1, "medium": 2, "high": 3, "critical": 4}
 CAPABILITY_SEVERITIES = {
     "shell": "high",
@@ -140,6 +146,8 @@ def _severity(category: str, item: dict[str, Any]) -> str:
         return _known_severity(str(item.get("severity", "low")))
     if category == "capabilities":
         return CAPABILITY_SEVERITIES.get(str(item.get("name", "")), "low")
+    if category == "mcp_servers":
+        return _known_severity(str(item.get("risk", "low")))
     if category == "secret_references":
         return "high"
     return "low"

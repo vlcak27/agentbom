@@ -92,17 +92,22 @@ def scan_path(path: str | Path, policy_path: str | Path | None = None) -> dict[s
             reachable_capability_hits.extend(detect_reachable_capability_hits(text, relpath))
 
     bom["reachable_capabilities"] = infer_reachable_capabilities(
-        bom["models"], bom["frameworks"], bom["mcp_servers"], reachable_capability_hits  # type: ignore[arg-type]
+        bom["models"],
+        bom["frameworks"],
+        bom["mcp_servers"],
+        bom["prompts"],
+        reachable_capability_hits,  # type: ignore[arg-type]
     )
     bom["capability_graph"] = build_capability_graph(
         bom["providers"],
         bom["models"],
         bom["frameworks"],
+        bom["mcp_servers"],
         bom["capabilities"],
         bom["reachable_capabilities"],
     )  # type: ignore[arg-type]
     bom["risks"] = score_risks(
-        bom["capabilities"], bom["prompts"], has_policy  # type: ignore[arg-type]
+        bom["capabilities"], bom["prompts"], bom["mcp_servers"], has_policy  # type: ignore[arg-type]
     )
     bom["policy_findings"] = validate_policies(
         bom["prompts"], bom["capabilities"], bom["mcp_servers"], has_policy  # type: ignore[arg-type]
@@ -123,10 +128,10 @@ def iter_scannable_files(root: Path):
     for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
         dirnames[:] = [
             name
-            for name in dirnames
+            for name in sorted(dirnames)
             if name not in IGNORE_DIRS and not (Path(dirpath) / name).is_symlink()
         ]
-        for filename in filenames:
+        for filename in sorted(filenames):
             file_path = Path(dirpath) / filename
             if file_path.is_symlink() or not file_path.is_file():
                 continue

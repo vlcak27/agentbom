@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
 from .detectors import confidence_for_path
 
@@ -113,11 +114,12 @@ def _matches_rule(text: str, lower_text: str, rule: dict[str, object]) -> bool:
 def infer_reachable_capabilities(
     models: list[dict[str, str]],
     frameworks: list[dict[str, str]],
-    mcp_servers: list[dict[str, str]],
+    mcp_servers: list[dict[str, Any]],
+    prompts: list[dict[str, str]],
     capability_hits: list[dict[str, str]],
-) -> list[dict[str, str]]:
+) -> list[dict[str, Any]]:
     """Connect model/framework/tool findings to capability hits."""
-    actors = _actors(models, frameworks, mcp_servers)
+    actors = _actors(models, frameworks, mcp_servers, prompts)
     reachable = []
     for hit in capability_hits:
         for actor in _reachable_actors(hit, actors):
@@ -133,13 +135,16 @@ def infer_reachable_capabilities(
                     "paths": hit.get("paths", []),
                 },
             )
+    for item in _mcp_reachable_capabilities(frameworks, prompts, mcp_servers):
+        _append_unique(reachable, item)
     return reachable
 
 
 def _actors(
     models: list[dict[str, str]],
     frameworks: list[dict[str, str]],
-    mcp_servers: list[dict[str, str]],
+    mcp_servers: list[dict[str, Any]],
+    prompts: list[dict[str, str]],
 ) -> list[dict[str, str]]:
     actors = []
     for model in models:
@@ -164,9 +169,18 @@ def _actors(
         actors.append(
             {
                 "type": "tool",
-                "name": server["name"],
-                "source_file": server["path"],
-                "confidence": server["confidence"],
+                "name": str(server["name"]),
+                "source_file": str(server["path"]),
+                "confidence": str(server["confidence"]),
+            }
+        )
+    for prompt in prompts:
+        actors.append(
+            {
+                "type": "prompt",
+                "name": "prompt configuration",
+                "source_file": prompt["path"],
+                "confidence": prompt["confidence"],
             }
         )
     return actors
@@ -228,6 +242,78 @@ def _paths_for_capability(capability: str, static_paths: list[str]) -> list[str]
     return paths
 
 
-def _append_unique(items: list[dict[str, str]], item: dict[str, str]) -> None:
+def _mcp_reachable_capabilities(
+    frameworks: list[dict[str, str]],
+    prompts: list[dict[str, str]],
+    mcp_servers: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    servers = [
+        server
+        for server in mcp_servers
+        if server.get("kind") == "server" or server.get("risk_categories")
+    ]
+    if not servers or not (frameworks or prompts):
+        return []
+
+    actors: list[dict[str, str]] = []
+    for framework in frameworks:
+        actors.append(
+            {
+                "name": framework["name"],
+                "source_file": framework["path"],
+                "confidence": framework["confidence"],
+            }
+        )
+    if not actors:
+        for prompt in prompts:
+            actors.append(
+                {
+                    "name": "prompt configuration",
+                    "source_file": prompt["path"],
+                    "confidence": prompt["confidence"],
+                }
+            )
+
+    reachable = []
+    for server in sorted(
+        servers,
+        key=lambda item: (str(item.get("path", "")), str(item.get("name", ""))),
+    ):
+        hit = {
+            "confidence": str(server.get("confidence", "low")),
+            "source_file": str(server.get("path", "")),
+        }
+        for actor in actors:
+            categories = server.get("risk_categories", [])
+            if not isinstance(categories, list):
+                categories = []
+            rationale = server.get("rationale", [])
+            if not isinstance(rationale, list):
+                rationale = []
+            reachable.append(
+                {
+                    "capability": "mcp_tool_invocation",
+                    "reachable_from": actor["name"],
+                    "source_file": str(server.get("path", "")),
+                    "risk": str(server.get("risk", "low")),
+                    "confidence": _combined_confidence(actor, hit),
+                    "confidence_score": _confidence_score(
+                        actor,
+                        {
+                            "confidence": hit["confidence"],
+                            "source_file": hit["source_file"],
+                            "paths": ["tool_invocation"],
+                        },
+                    ),
+                    "paths": ["tool_invocation"],
+                    "mcp_server": str(server.get("name", "")),
+                    "risk_categories": [str(category) for category in categories],
+                    "rationale": [str(reason) for reason in rationale],
+                }
+            )
+    return reachable
+
+
+def _append_unique(items: list[dict[str, Any]], item: dict[str, Any]) -> None:
     if item not in items:
         items.append(item)

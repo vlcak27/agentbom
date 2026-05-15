@@ -602,6 +602,144 @@ def test_policy_findings_are_empty_when_policy_file_exists(tmp_path):
     assert data["policy_findings"] == []
 
 
+def test_mcp_security_analysis_extracts_safe_server_metadata(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "AGENTS.md").write_text("prompt", encoding="utf-8")
+    (project / ".mcp.json").write_text(
+        """
+        {
+          "mcpServers": {
+            "safe-docs": {
+              "command": "npx",
+              "args": ["-y", "@modelcontextprotocol/server-memory", "--api-key", "do-not-store"],
+              "env": {
+                "DOCS_API_KEY": "do-not-store"
+              }
+            }
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    data = scan_path(project)
+
+    assert data["mcp_servers"] == [
+        {
+            "name": "safe-docs",
+            "path": ".mcp.json",
+            "confidence": "medium",
+            "kind": "server",
+            "parse_status": "parsed",
+            "risk": "high",
+            "risk_categories": ["secrets_env_access"],
+            "rationale": ["server declares environment variables: DOCS_API_KEY"],
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-memory", "--api-key", "[redacted]"],
+            "env": ["DOCS_API_KEY"],
+            "transport": "stdio",
+            "package": "@modelcontextprotocol/server-memory",
+        }
+    ]
+    assert "do-not-store" not in str(data)
+    assert_reachable_contains(data["reachable_capabilities"], {
+        "capability": "mcp_tool_invocation",
+        "reachable_from": "prompt configuration",
+        "source_file": ".mcp.json",
+        "risk": "high",
+        "confidence": "low",
+        "confidence_score": 70,
+        "paths": ["tool_invocation"],
+        "mcp_server": "safe-docs",
+    })
+
+
+def test_mcp_security_analysis_classifies_filesystem_and_shell_servers(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "agent.py").write_text(
+        "from langchain.chat_models import ChatOpenAI\n",
+        encoding="utf-8",
+    )
+    (project / ".cursor").mkdir()
+    (project / ".cursor" / "mcp.json").write_text(
+        """
+        {
+          "mcpServers": {
+            "filesystem": {
+              "command": "npx",
+              "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+            },
+            "shell-runner": {
+              "command": "python",
+              "args": ["-m", "local_shell_server"]
+            }
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    data = scan_path(project)
+
+    servers = {item["name"]: item for item in data["mcp_servers"]}
+    assert servers["filesystem"]["risk"] == "high"
+    assert "filesystem_access" in servers["filesystem"]["risk_categories"]
+    assert servers["filesystem"]["package"] == "@modelcontextprotocol/server-filesystem"
+    assert servers["shell-runner"]["risk"] == "high"
+    assert "shell_process_execution" in servers["shell-runner"]["risk_categories"]
+    assert servers["shell-runner"]["package"] == "local_shell_server"
+    assert any(
+        item.get("mcp_server") == "filesystem"
+        and item.get("reachable_from") == "langchain"
+        for item in data["reachable_capabilities"]
+    )
+
+
+def test_invalid_mcp_json_is_reported_without_crashing(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "claude_desktop_config.json").write_text("{not-json", encoding="utf-8")
+
+    data = scan_path(project)
+
+    assert data["mcp_servers"] == [
+        {
+            "name": "claude_desktop_config.json",
+            "path": "claude_desktop_config.json",
+            "confidence": "medium",
+            "kind": "config_file",
+            "parse_status": "invalid_json",
+            "risk": "low",
+            "risk_categories": ["unknown_custom_server"],
+            "rationale": ["MCP config could not be parsed as JSON"],
+        }
+    ]
+
+
+def test_mcp_output_order_is_deterministic(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "mcp.json").write_text(
+        """
+        {
+          "mcpServers": {
+            "z-server": {"command": "node", "args": ["z.js"]},
+            "a-server": {"command": "node", "args": ["a.js"]}
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    first = scan_path(project)
+    second = scan_path(project)
+
+    assert [item["name"] for item in first["mcp_servers"]] == ["a-server", "z-server"]
+    assert first["mcp_servers"] == second["mcp_servers"]
+
+
 def test_capability_graph_contains_nodes_and_edges(tmp_path):
     project = tmp_path / "agent"
     project.mkdir()

@@ -52,7 +52,7 @@
     "mcp_servers": {
       "type": "array",
       "items": {
-        "$ref": "#/$defs/named_finding"
+        "$ref": "#/$defs/mcp_server_finding"
       }
     },
     "prompts": {
@@ -132,6 +132,85 @@
         },
         "confidence": {
           "$ref": "#/$defs/confidence"
+        }
+      }
+    },
+    "mcp_server_finding": {
+      "type": "object",
+      "required": [
+        "name",
+        "path",
+        "confidence"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "config_file",
+            "server"
+          ]
+        },
+        "parse_status": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "env": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "transport": {
+          "type": "string"
+        },
+        "package": {
+          "type": "string"
+        },
+        "risk": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "risk_categories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "filesystem_access",
+              "shell_process_execution",
+              "browser_network_access",
+              "database_access",
+              "cloud_access",
+              "secrets_env_access",
+              "unknown_custom_server"
+            ]
+          }
+        },
+        "rationale": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -249,6 +328,21 @@
               "network_execution"
             ]
           }
+        },
+        "mcp_server": {
+          "type": "string"
+        },
+        "risk_categories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rationale": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -355,7 +449,9 @@
             "model",
             "framework",
             "capability",
-            "provider"
+            "provider",
+            "mcp_server",
+            "mcp_risk"
           ]
         },
         "name": {
@@ -382,7 +478,9 @@
           "enum": [
             "uses",
             "enables",
-            "reaches"
+            "reaches",
+            "exposes",
+            "risk"
           ]
         }
       }

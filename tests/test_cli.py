@@ -91,11 +91,15 @@ def test_cli_generates_json_and_markdown(tmp_path):
         "confidence": "high",
     } in data["frameworks"]
 
-    assert {
-        "name": "mcp.json",
-        "path": "mcp.json",
-        "confidence": "medium",
-    } in data["mcp_servers"]
+    assert data["mcp_servers"] == [
+        {
+            "name": "mcp.json",
+            "path": "mcp.json",
+            "confidence": "medium",
+            "kind": "config_file",
+            "parse_status": "no_servers",
+        }
+    ]
 
     assert {
         "path": "AGENTS.md",
@@ -177,6 +181,7 @@ def test_cli_generates_html_when_requested(tmp_path):
     assert "Review Priorities" in html
     assert "How to read this report" in html
     assert "Providers &amp; Models" in html
+    assert "MCP Security Analysis" in html
     assert "Reachable Capabilities" in html
     assert "Policy Findings" in html
     assert "Prompt Injection Surfaces" in html
@@ -328,6 +333,43 @@ def test_cli_generates_sarif_when_requested(tmp_path):
             },
         }
     } in locations
+
+
+def test_sarif_emits_high_risk_mcp_server_findings(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "mcp.json").write_text(
+        """
+        {
+          "mcpServers": {
+            "shell-runner": {
+              "command": "python",
+              "args": ["-m", "local_shell_server"]
+            }
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    output_dir = tmp_path / "out"
+
+    result = main(
+        [
+            "scan",
+            str(project),
+            "--output-dir",
+            str(output_dir),
+            "--sarif",
+            "--pretty",
+        ]
+    )
+
+    assert result == 0
+    sarif = json.loads((output_dir / "agentbom.sarif").read_text(encoding="utf-8"))
+    rule_ids = {result["ruleId"] for result in sarif["runs"][0]["results"]}
+
+    assert "mcp.high_risk_server.shell_runner" in rule_ids
 
 
 def test_cli_generates_diff_outputs_and_fails_on_new_threshold(tmp_path, capsys):
