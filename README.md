@@ -5,12 +5,12 @@
 ![Python](https://img.shields.io/pypi/pyversions/ai-agentbom)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-Offline bill of materials and attack surface scanner for AI agent repositories.
+Offline bill of materials and attack surface analysis for AI agent repositories.
 
-AgentBOM helps reviewers answer a practical question: what AI providers, models,
-frameworks, prompts, MCP configuration, and sensitive capabilities exist in this
-agent repository, and which of those capabilities appear reachable from an AI
-actor?
+AgentBOM helps reviewers answer a practical question: what AI providers, model
+identifiers, frameworks, prompts, MCP configuration, and sensitive capabilities
+exist in this agent repository, and which of those capabilities appear reachable
+from an AI actor?
 
 It does not execute scanned code, import scanned modules, read secret values, or
 require network access.
@@ -31,7 +31,8 @@ Scan a repository:
 agentbom scan . --pretty
 ```
 
-Generate the shareable reports most teams want in review:
+Generate shareable review artifacts, including HTML for humans, Mermaid for
+architecture review, and SARIF for GitHub code scanning:
 
 ```bash
 agentbom scan . --output-dir agentbom-report --html --mermaid --sarif --pretty
@@ -52,20 +53,21 @@ Risk: high (70/100)
 
 ## Why AgentBOM
 
-AI agents combine model output with software capabilities. A dependency list or
-general static analyzer can tell you that code imports a package or calls a risky
-API, but it usually does not explain whether an agent framework, model, prompt,
-or MCP configuration appears connected to that capability.
+AI agents combine model output with software capabilities. A dependency list,
+generic SBOM, or general static analyzer can tell you that code imports a
+package or calls a risky API, but it usually does not explain whether an agent
+framework, model identifier, prompt, or MCP configuration appears connected to
+that capability.
 
 AgentBOM makes that review repeatable:
 
-- maps AI-specific components: providers, models, frameworks, prompts, and MCP
-  configuration
+- maps AI-specific components: providers, statically detected model identifiers,
+  frameworks, prompts, and MCP configuration
 - connects agent actors to reachable capabilities such as shell, code execution,
   network, database, cloud, and MCP tool invocation
 - records source paths, confidence, and rationale for review
 - produces deterministic JSON plus human-readable Markdown and HTML
-- exports Mermaid for architecture review and SARIF for GitHub code scanning
+- exports Mermaid for attack-surface review and SARIF for GitHub code scanning
 - runs offline with zero telemetry and no runtime dependencies
 
 Findings are review signals, not exploit claims.
@@ -78,15 +80,16 @@ review.
 | Question | Traditional SAST | AgentBOM |
 | --- | --- | --- |
 | Is there a risky API call? | Yes | Yes, at a coarse deterministic level |
-| Which AI provider or model is present? | Usually no | Yes |
+| Which AI provider or model identifier is present? | Usually no | Yes, by static detection |
 | Which agent framework may route tool calls? | Usually no | Yes |
 | Are prompt or MCP surfaces present? | Usually no | Yes |
 | Can an AI actor appear to reach a capability? | Usually no | Yes |
 | Does it work offline without executing code? | Depends on tool | Yes |
 | Is output designed for AI governance evidence? | Usually no | Yes |
 
-Use SAST for language-specific vulnerability analysis. Use AgentBOM to explain
-the AI agent bill of materials and attack surface.
+Use SAST for language-specific vulnerability analysis and generic SBOM tools for
+package inventory. Use AgentBOM to explain the AI-specific bill of materials,
+including which agent actors appear connected to sensitive capabilities.
 
 ## Demo Repositories
 
@@ -112,7 +115,7 @@ See the [demo workflow](docs/demo-workflow.md) for a repeatable walkthrough.
 | Area | Examples |
 | --- | --- |
 | Providers | OpenAI, Anthropic, Gemini, Ollama, DeepSeek, OpenRouter |
-| Models | `gpt-5.5`, `gpt-5.4-mini`, `gpt-4o-mini`, `o3`, `claude-opus-4.7`, `gemini-2.5-pro`, `deepseek-reasoner`, `llama3.3`, `qwen3`, `openrouter/openai/gpt-5.5` |
+| Models | Static model identifiers such as `gpt-5.5`, `gpt-5.4-mini`, `gpt-4o-mini`, `o3`, `claude-opus-4.7`, `gemini-2.5-pro`, `deepseek-reasoner`, `llama3.3`, `qwen3`, `openrouter/openai/gpt-5.5` |
 | Frameworks | LangChain, LangGraph, LlamaIndex, CrewAI, AutoGen, Semantic Kernel |
 | MCP | `mcp.json`, `claude_desktop_config.json` |
 | Prompts | `AGENTS.md`, `CLAUDE.md`, `prompts/*.md`, prompt YAML |
@@ -201,7 +204,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run AgentBOM
-        uses: vlcak27/agentbom@v0.5.1
+        uses: vlcak27/agentbom@v0.5.2
         with:
           path: .
           # Informational mode for demos and first-time rollout:
