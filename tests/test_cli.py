@@ -13,7 +13,7 @@ def test_cli_version(capsys):
         main(["--version"])
 
     assert exc.value.code == 0
-    assert "agentbom 0.5.1" in capsys.readouterr().out
+    assert "agentbom 0.6.0" in capsys.readouterr().out
 
 
 def test_cli_help_mentions_core_workflows(capsys):
@@ -302,7 +302,7 @@ def test_cli_generates_sarif_when_requested(tmp_path):
 
     assert sarif["version"] == "2.1.0"
     assert run["tool"]["driver"]["name"] == "AgentBOM"
-    assert run["tool"]["driver"]["semanticVersion"] == "0.5.1"
+    assert run["tool"]["driver"]["semanticVersion"] == "0.6.0"
 
     assert "risk.high" in rule_ids
     assert "risk.low" in rule_ids

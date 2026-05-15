@@ -2,6 +2,38 @@
 
 All notable changes to AgentBOM are documented here.
 
+## v0.6.0
+
+### Added
+
+- First-class MCP Security Analysis for AI agent attack-surface review.
+- Safe JSON-only MCP config parsing for common files such as `mcp.json`,
+  `.mcp.json`, `claude_desktop_config.json`, and nested Cursor/Claude paths.
+- MCP server metadata extraction for server name, command, args, package or
+  binary, transport, source file, confidence, risk categories, and rationale.
+- MCP env handling that records variable names only, never values.
+- MCP risk categories for filesystem access, shell/process execution,
+  browser/network access, database access, cloud access, secrets/env access, and
+  unknown/custom servers.
+- MCP reachability integration for agent framework or prompt context connected
+  to parsed MCP server configuration.
+- MCP report coverage across JSON, Markdown, HTML, Mermaid, and SARIF.
+- MCP policy support for denied server names and denied risk categories.
+- MCP demo repositories for controlled and risky MCP configurations.
+- Dedicated MCP Security Analysis documentation guide.
+
+### Security Model
+
+- MCP analysis remains offline and deterministic.
+- AgentBOM does not execute MCP servers or scanned code.
+- AgentBOM does not contact networks during scanning.
+- Secret values and MCP env values are not stored or printed.
+
+### Improved
+
+- Reduced MCP false positives during the pre-release audit, including tighter
+  shell/process classification and parsed-server-only MCP reachability.
+
 ## v0.5.2
 
 ### Improved
