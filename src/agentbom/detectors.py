@@ -29,23 +29,38 @@ PROVIDERS = {
     "openrouter": ("openrouter", "OPENROUTER_API_KEY", "openrouter.ai/api/v1"),
 }
 
-MODELS = (
-    "deepseek-reasoner",
-    "deepseek-chat",
-    "gemini-2.0-flash",
-    "gemini-1.5-pro",
-    "claude-3-sonnet",
-    "claude-3-haiku",
-    "claude-3-opus",
-    "mistral-large",
-    "gemini-pro",
-    "claude-3",
-    "gpt-4.1",
-    "gpt-4o",
-    "gpt-4",
-    "gpt-5",
-    "llama3.1",
-    "llama3",
+MODEL_PREFIX_RE = r"(?:(?:openrouter/)?(?:openai|anthropic|deepseek|google)/)?"
+MODEL_PATTERNS = (
+    re.compile(
+        rf"(?<![A-Za-z0-9_.-]){MODEL_PREFIX_RE}"
+        r"(?P<model>gpt-(?:5(?:\.\d+)?(?:-(?:pro|mini|nano))?|4\.1(?:-(?:mini|nano))?|4o(?:-mini)?|4)|o(?:3|4-mini))"
+        r"(?![A-Za-z0-9_.-])",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"(?<![A-Za-z0-9_.-]){MODEL_PREFIX_RE}"
+        r"(?P<model>claude-(?:(?:opus|sonnet|haiku)-\d+(?:[.-]\d+)?|3(?:\.\d+)?(?:-(?:opus|sonnet|haiku))?))"
+        r"(?![A-Za-z0-9_.-])",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"(?<![A-Za-z0-9_.-]){MODEL_PREFIX_RE}"
+        r"(?P<model>gemini-(?:pro|\d+(?:\.\d+)?-(?:pro|flash)))"
+        r"(?![A-Za-z0-9_.-])",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"(?<![A-Za-z0-9_.-]){MODEL_PREFIX_RE}"
+        r"(?P<model>deepseek-(?:chat|reasoner))"
+        r"(?![A-Za-z0-9_.-])",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?<![A-Za-z0-9_.-])"
+        r"(?P<model>llama\d+(?:\.\d+)?|qwen\d+(?:\.\d+)?|mistral-large|codestral|grok)"
+        r"(?![A-Za-z0-9_.-])",
+        re.IGNORECASE,
+    ),
 )
 
 FRAMEWORKS = {
@@ -246,13 +261,13 @@ class ModelDetector:
 
         findings = []
         confidence = confidence_for_path(context.relpath)
-        for model in MODELS:
-            pattern = re.compile(
-                rf"(?<![A-Za-z0-9_.-]){re.escape(model)}(?![A-Za-z0-9_.-])",
-                re.IGNORECASE,
-            )
-            match = pattern.search(context.text)
-            if match:
+        seen_names = set()
+        for pattern in MODEL_PATTERNS:
+            for match in pattern.finditer(context.text):
+                model = match.group("model").lower()
+                if model in seen_names:
+                    continue
+                seen_names.add(model)
                 findings.append(
                     {
                         "type": "model",

@@ -112,7 +112,7 @@ See the [demo workflow](docs/demo-workflow.md) for a repeatable walkthrough.
 | Area | Examples |
 | --- | --- |
 | Providers | OpenAI, Anthropic, Gemini, Ollama, DeepSeek, OpenRouter |
-| Models | `gpt-4o`, `gpt-4.1`, `claude-3-sonnet`, `gemini-2.0-flash`, `deepseek-chat`, `llama3.1` |
+| Models | `gpt-5.5`, `gpt-5.4-mini`, `gpt-4o-mini`, `o3`, `claude-opus-4.7`, `gemini-2.5-pro`, `deepseek-reasoner`, `llama3.3`, `qwen3`, `openrouter/openai/gpt-5.5` |
 | Frameworks | LangChain, LangGraph, LlamaIndex, CrewAI, AutoGen, Semantic Kernel |
 | MCP | `mcp.json`, `claude_desktop_config.json` |
 | Prompts | `AGENTS.md`, `CLAUDE.md`, `prompts/*.md`, prompt YAML |

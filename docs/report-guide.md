@@ -16,7 +16,8 @@ It records static evidence, source paths, confidence, and rationale.
 ## Terms
 
 - Provider: AI service or runtime vendor such as OpenAI, Anthropic, or Gemini.
-- Model: concrete model identifier such as `gpt-4o` or `claude-3-sonnet`.
+- Model: concrete model identifier such as `gpt-5.5`, `claude-opus-4.7`,
+  `gemini-2.5-pro`, or `openrouter/openai/gpt-5.5`.
 - Framework: agent orchestration library such as LangChain or CrewAI.
 - Capability: static evidence of a sensitive action, such as shell or network.
 - Reachable capability: an inferred relationship from an AI actor to a
