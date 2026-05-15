@@ -1,14 +1,14 @@
 # GitHub Action
 
-The bundled action runs AgentBOM, preserves report artifacts, and can optionally
-upload SARIF to GitHub code scanning or fail a workflow when repository risk
-meets a chosen threshold.
+The action runs AgentBOM in GitHub Actions. It writes report artifacts. It can
+also upload SARIF to GitHub code scanning or fail the workflow when repository
+risk meets a chosen threshold.
 
-For demos, first-time rollout, and public repositories with intentional examples,
-start with informational artifact mode. This keeps CI green and makes the
-JSON/Markdown/HTML reports available without creating GitHub code scanning
-alerts. The action defaults are stricter, so set `fail-on: none` and
-`sarif-upload: false` explicitly when you want a non-blocking first run.
+For demos, initial adoption, and repositories with intentional examples, start
+with informational mode. This writes JSON/Markdown/HTML reports without failing
+CI or creating code scanning alerts. The action defaults are stricter, so set
+`fail-on: none` and `sarif-upload: false` explicitly for a non-blocking first
+run.
 
 ```yaml
 name: AgentBOM
@@ -31,7 +31,7 @@ jobs:
         uses: vlcak27/agentbom@v0.6.0
         with:
           path: .
-          # Informational artifact mode for demos and first-time rollout:
+          # Informational mode:
           # publish reports without blocking CI or creating code scanning alerts.
           fail-on: none
           sarif-upload: false
@@ -76,7 +76,7 @@ Informational mode:
 - Set `fail-on: none`.
 - Set `sarif-upload: false`.
 - Keep `html: true` and upload `agentbom-report/` as an artifact.
-- Use this mode to collect a baseline without failing CI.
+- Use this mode to inspect a baseline without failing CI.
 
 SARIF review mode:
 
@@ -91,4 +91,4 @@ Enforcement mode:
 - Keep report artifacts enabled so reviewers can inspect the reason for a
   failure.
 - Make the workflow a required branch protection check only after the threshold
-  is accepted by the team.
+  matches the repository policy.

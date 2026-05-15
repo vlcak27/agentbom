@@ -1,14 +1,13 @@
 # Public Launch Guide
 
-Use this checklist when preparing AgentBOM for a public announcement, repository
-share, or external demo.
+Use this checklist for public repository setup, screenshots, and announcement
+copy.
 
 ## GitHub About
 
 Description:
 
-> Offline bill of materials and attack surface analysis for AI agent
-> repositories.
+> Offline static scanner for AI-agent components and reachable capabilities.
 
 Website:
 
@@ -35,8 +34,8 @@ Recommended topics:
 
 Store launch screenshots under `docs/images/`:
 
-- `terminal-quickstart.png`: install and scan commands with concise output.
-- `html-report-summary.png`: HTML report summary with risk, providers,
+- `terminal-quickstart.png`: install command, scan command, and output files.
+- `html-report-summary.png`: HTML report header with risk, providers,
   frameworks, and reachable capabilities.
 - `mcp-security-analysis.png`: MCP servers, risk categories, source paths, and
   env variable names only.
@@ -60,7 +59,7 @@ Quick scan:
 agentbom scan . --pretty
 ```
 
-Generate shareable reports:
+Generate reports:
 
 ```bash
 agentbom scan . --output-dir agentbom-report --html --mermaid --sarif --pretty
@@ -100,8 +99,8 @@ with:
 ````markdown
 # AgentBOM vX.Y.Z
 
-AgentBOM is an offline CLI for AI agent bill of materials and attack surface
-review.
+AgentBOM is an offline static scanner for AI-agent components and reachable
+capabilities.
 
 ## Highlights
 
@@ -125,7 +124,7 @@ review.
 - Runs offline.
 - Does not execute scanned code or MCP servers.
 - Records secret names only, never values.
-- Findings are review signals, not exploit proof.
+- Findings are review signals, not exploit verification.
 
 ## Upgrade
 
@@ -138,34 +137,33 @@ pip install --upgrade ai-agentbom
 
 X/Twitter:
 
-> AgentBOM is an open-source CLI for reviewing AI agent repositories. It
-> generates an offline bill of materials for providers, models, frameworks,
-> prompts, MCP servers, reachable capabilities, and policy gaps. Findings are
-> review signals, not exploit proof.
+> AgentBOM is an open-source offline static scanner for AI-agent repositories.
+> It maps providers, models, frameworks, prompts, MCP servers, policy gaps, and
+> capabilities that appear reachable from an agent. Findings are review signals,
+> not exploit verification.
 
 Hacker News:
 
-> AgentBOM is a small open-source CLI that scans AI agent repositories offline
-> and produces JSON, Markdown, HTML, Mermaid, and SARIF reports. v0.6.0 adds MCP
-> Security Analysis: it parses MCP config safely, records env variable names
-> only, categorizes server risk, and highlights reachable MCP tool exposure for
-> review.
+> AgentBOM is a small open-source CLI that scans AI-agent repositories offline
+> and writes JSON, Markdown, HTML, Mermaid, and SARIF reports. v0.6.0 adds MCP
+> Security Analysis: JSON config parsing, env-name-only reporting, deterministic
+> server risk categories, and static reachability signals for MCP tool exposure.
 
 Reddit:
 
-> I built AgentBOM, an open-source offline CLI for AI agent repository review.
-> It reports providers, model identifiers, frameworks, prompts, MCP
-> configuration, reachable capabilities, and policy gaps without executing code
-> or reading secret values. v0.6.0 focuses on MCP Security Analysis and GitHub
-> Action/SARIF workflows.
+> I built AgentBOM, an open-source offline scanner for AI-agent repositories. It
+> reports providers, model identifiers, frameworks, prompts, MCP configuration,
+> reachable capabilities, and policy gaps without executing code or reading
+> secret values. v0.6.0 adds MCP Security Analysis plus GitHub Action and SARIF
+> output.
 
 LinkedIn:
 
-> AgentBOM helps teams review AI agent repositories with an offline bill of
-> materials and attack surface report. It identifies AI providers, model
-> identifiers, frameworks, prompts, MCP configuration, reachable capabilities,
-> and policy gaps, with JSON, Markdown, HTML, Mermaid, SARIF, and GitHub Action
-> outputs. Findings are designed as review signals for human assessment.
+> AgentBOM is an open-source offline static scanner for AI-agent repositories.
+> It reports providers, model identifiers, frameworks, prompts, MCP
+> configuration, reachable capabilities, and policy gaps. Outputs include JSON,
+> Markdown, HTML, Mermaid, SARIF, and a GitHub Action. Findings are review
+> signals for human assessment.
 
 ## What To Show
 
@@ -179,7 +177,7 @@ LinkedIn:
 
 ## What Not To Overclaim
 
-- Do not claim exploit proof or runtime validation.
+- Do not claim exploit verification or runtime validation.
 - Do not claim package authenticity verification.
 - Do not claim deep language-specific SAST coverage.
 - Do not claim CycloneDX or SPDX replacement.

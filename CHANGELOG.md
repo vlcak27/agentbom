@@ -6,7 +6,7 @@ All notable changes to AgentBOM are documented here.
 
 ### Added
 
-- First-class MCP Security Analysis for AI agent attack-surface review.
+- MCP Security Analysis for AI agent attack-surface review.
 - Safe JSON-only MCP config parsing for common files such as `mcp.json`,
   `.mcp.json`, `claude_desktop_config.json`, and nested Cursor/Claude paths.
 - MCP server metadata extraction for server name, command, args, package or
@@ -54,8 +54,8 @@ All notable changes to AgentBOM are documented here.
   offline.
 
 Why this matters: Agent repositories increasingly mix cloud, local, and
-router-based model identifiers; this release improves static visibility across
-that ecosystem.
+router-based model identifiers. This release expands static detection for those
+strings.
 
 ## v0.5.0
 
@@ -72,8 +72,8 @@ that ecosystem.
 ### Improved
 
 - README onboarding, demo workflow, screenshots, and architecture diagrams.
-- Report explanations for non-security reviewers.
-- Realistic demo repositories for support and research agents.
+- Report explanations for reviewers.
+- Demo repositories for support and research agents.
 - Issue templates, release notes templates, and contribution docs.
 
 ### Security Model

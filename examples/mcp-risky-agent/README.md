@@ -1,9 +1,9 @@
 # MCP Risky Agent Demo
 
-This static demo shows why MCP configuration deserves review. The agent has a
-framework and prompt context, plus MCP servers that appear to expose filesystem,
-shell/process, browser/network, database, cloud, and env-backed access. The env
-entries are variable names only.
+This static demo contains MCP configuration that should be reviewed. The agent
+has a framework and prompt context, plus MCP servers that appear to expose
+filesystem, shell/process, browser/network, database, cloud, and env-backed
+access. The env entries are variable names only.
 
 AgentBOM scans this directory as text. Do not run the demo agent, install its
 requirements, or execute the configured MCP server commands for the scan.
@@ -13,8 +13,8 @@ Expected AgentBOM result:
 - OpenAI provider and `gpt-4o`
 - LangGraph framework
 - parsed MCP server metadata from `mcp.json`
-- high-risk MCP server categories
-- reachable `mcp_tool_invocation` findings from the framework context
+- MCP server risk categories
+- reachable `mcp_tool_invocation` findings from static framework context
 - policy findings because no local policy documentation is present
 
 Run:

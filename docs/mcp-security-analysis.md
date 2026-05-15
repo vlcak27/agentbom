@@ -6,7 +6,7 @@ that need credentials. AgentBOM treats MCP configuration as part of the agent
 attack surface so reviewers can see which tools are configured and whether they
 appear reachable from agent code or prompt context.
 
-Findings are review signals, not proof of exploitability.
+Findings are review signals, not exploit verification.
 
 ## What AgentBOM Detects
 
@@ -50,9 +50,9 @@ output.
 
 ## Risk Categories
 
-MCP server risk is assigned with deterministic pattern matching. Categories are
-intended to help reviewers prioritize where access could matter if the server is
-enabled and reachable. They do not claim that a server is exploitable.
+MCP server risk is assigned with deterministic pattern matching. Categories help
+reviewers prioritize access that may matter if the server is enabled and
+reachable. They do not verify exploitability.
 
 | Category | Review question |
 | --- | --- |
@@ -67,14 +67,14 @@ enabled and reachable. They do not claim that a server is exploitable.
 ## Reachability
 
 AgentBOM marks MCP tool invocation as reachable when parsed MCP server config
-exists alongside an agent framework or prompt configuration. In plain terms:
-there is static evidence of an agent runtime or prompt surface, and there is MCP
-configuration in the same repository. The reachable finding includes the MCP
-server name, source file, risk categories, and rationale.
+exists alongside an agent framework or prompt configuration. This is static
+evidence of an agent runtime or prompt surface near MCP configuration. The
+finding includes the MCP server name, source file, risk categories, and
+rationale.
 
-Reachability is an inferred static relationship. It is useful for review
-triage, but it is not runtime proof that a model can call a specific tool in a
-deployed environment.
+Reachability is an inferred static relationship. It is a review signal. It is
+not runtime evidence that a model can call a specific tool in a deployed
+environment.
 
 ## Policy Controls
 
@@ -125,14 +125,15 @@ findings. Then inspect the config source file to confirm whether the server is
 expected and whether policy controls, sandboxing, read-only modes, or human
 approval are documented.
 
-## What AgentBOM Does Not Do
+## Limitations
 
 AgentBOM does not:
 
 - execute MCP servers
 - validate server package authenticity
 - contact package registries or remote services
-- prove exploitability
+- verify exploitability
 - inspect runtime permissions
+- trace runtime tool calls
 - verify that an env variable exists
 - store or print secret values

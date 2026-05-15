@@ -1,8 +1,8 @@
 # MCP Safe Agent Demo
 
-This static demo shows a controlled MCP setup. The agent has a prompt, a simple
-LangChain model call, a low-risk local memory MCP server, and policy text that
-requires human approval before tool output is used.
+This static demo contains a controlled MCP setup. The agent has a prompt, a
+LangChain model call, a local memory MCP server, and policy text that requires
+human approval before tool output is used.
 
 AgentBOM scans this directory as text. Do not run the demo agent or install its
 requirements for the scan.
@@ -12,7 +12,7 @@ Expected AgentBOM result:
 - OpenAI provider and `gpt-4o`
 - LangChain framework
 - parsed MCP server metadata from `.mcp.json`
-- low-risk `unknown_custom_server` MCP category for the local memory server
+- `unknown_custom_server` MCP category for the local memory server
 - reachable `mcp_tool_invocation` with documented controls
 
 Run:

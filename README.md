@@ -5,16 +5,13 @@
 ![Python](https://img.shields.io/pypi/pyversions/ai-agentbom)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-AgentBOM is an offline CLI for reviewing AI agent repositories. It generates a
-bill of materials and attack surface report for AI providers, model identifiers,
-frameworks, prompts, MCP servers, policy gaps, and sensitive capabilities.
-
-Use it to answer a practical review question: what agent components exist in
-this repository, and which capabilities appear reachable from an AI actor?
+AgentBOM is an offline static scanner for AI-agent repositories. It maps
+providers, model identifiers, frameworks, prompts, MCP servers, policy gaps, and
+capabilities that appear reachable from an agent.
 
 AgentBOM does not execute scanned code, import scanned modules, contact
-networks, or store secret values. Findings are review signals for humans, not
-proof of exploitability.
+networks, or store secret values. Findings are review signals, not exploit
+verification.
 
 ![AgentBOM HTML report preview](docs/assets/html-report-preview.svg)
 
@@ -32,8 +29,7 @@ Scan a repository:
 agentbom scan . --pretty
 ```
 
-Generate shareable review artifacts, including HTML for humans, Mermaid for
-architecture review, and SARIF for GitHub code scanning:
+Generate review artifacts, including HTML, Mermaid, and SARIF:
 
 ```bash
 agentbom scan . --output-dir agentbom-report --html --mermaid --sarif --pretty
@@ -56,16 +52,16 @@ Risk: high (70/100)
 
 Current preview assets:
 
-- [HTML report preview](docs/assets/html-report-preview.svg): shows the
-  repository risk summary, findings, and report navigation.
-- [Terminal demo](docs/assets/terminal-demo.svg): shows install, scan, generated
-  report files, and risk output.
-- [Architecture flow](docs/assets/architecture-flow.svg): shows the static
-  analysis pipeline.
+- [HTML report preview](docs/assets/html-report-preview.svg): repository risk,
+  findings, and report navigation.
+- [Terminal demo](docs/assets/terminal-demo.svg): install command, scan command,
+  output files, and risk score.
+- [Architecture flow](docs/assets/architecture-flow.svg): static analysis
+  pipeline.
 
 Recommended screenshot paths for launch images:
 
-- `docs/images/terminal-quickstart.png`: copy-paste install and scan output.
+- `docs/images/terminal-quickstart.png`: install and scan output.
 - `docs/images/html-report-summary.png`: top of `agentbom.html` with risk,
   providers, frameworks, and reachable capabilities visible.
 - `docs/images/mcp-security-analysis.png`: MCP server table with risk
@@ -78,10 +74,10 @@ See [`docs/images/README.md`](docs/images/README.md) for screenshot guidance.
 ## MCP Security Analysis
 
 MCP servers can give an agent access to local files, command execution,
-browsers, databases, cloud APIs, and env-backed services. AgentBOM v0.6.0 parses
-MCP JSON configuration safely, records metadata such as command, args, package,
-transport, and env variable names, then connects MCP tool exposure to agent
-framework or prompt context for review.
+browsers, databases, cloud APIs, and env-backed services. AgentBOM parses MCP
+JSON configuration as data. It records command, args, package, transport, env
+variable names, and risk categories. It then reports MCP tool exposure when MCP
+configuration appears near agent framework or prompt context.
 
 Try the MCP demos:
 
@@ -93,20 +89,18 @@ agentbom scan examples/mcp-risky-agent --policy examples/policies/mcp-policy.yam
 
 AgentBOM does not execute MCP servers, contact networks, or store env values.
 It records env variable names only, never secret values. Findings are review
-signals, not proof of exploitability. See
+signals, not exploit verification. See
 [`docs/mcp-security-analysis.md`](docs/mcp-security-analysis.md).
 
 ## Why AgentBOM
 
-AI agents combine model output with software capabilities. A dependency list,
-generic SBOM, or general static analyzer can tell you that code imports a
-package or calls a risky API, but it usually does not explain whether an agent
-framework, model identifier, prompt, or MCP configuration appears connected to
-that capability.
+AI agents combine model output with software capabilities. Package inventory and
+general SAST tools do not usually show whether prompts, frameworks, model
+identifiers, or MCP configuration are connected to those capabilities.
 
-AgentBOM makes that review repeatable:
+AgentBOM records that context:
 
-- maps AI-specific components: providers, statically detected model identifiers,
+- maps agent components: providers, statically detected model identifiers,
   frameworks, prompts, and MCP configuration
 - analyzes MCP server definitions from JSON config, including command, args,
   transport, package or binary, env variable names, and risk categories
@@ -114,15 +108,15 @@ AgentBOM makes that review repeatable:
   network, database, cloud, and MCP tool invocation
 - records source paths, confidence, and rationale for review
 - produces deterministic JSON plus human-readable Markdown and HTML
-- exports Mermaid for attack-surface review and SARIF for GitHub code scanning
+- exports Mermaid for architecture review and SARIF for GitHub code scanning
 - runs offline with zero telemetry and no runtime dependencies
 
-Findings are review signals, not exploit claims.
+Findings are review signals. They require human review.
 
 ## AgentBOM vs. Traditional SAST
 
-AgentBOM is not a replacement for SAST. It is a focused companion for AI agent
-review.
+AgentBOM is not a replacement for SAST. It covers a narrower AI-agent review
+scope.
 
 | Question | Traditional SAST | AgentBOM |
 | --- | --- | --- |
@@ -130,17 +124,17 @@ review.
 | Which AI provider or model identifier is present? | Usually no | Yes, by static detection |
 | Which agent framework may route tool calls? | Usually no | Yes |
 | Are prompt or MCP surfaces present? | Usually no | Yes |
-| Can an AI actor appear to reach a capability? | Usually no | Yes |
+| Can an AI actor appear to reach a capability? | Usually no | Yes, by static inference |
 | Does it work offline without executing code? | Depends on tool | Yes |
-| Is output designed for AI governance evidence? | Usually no | Yes |
+| Does output include source paths and rationale? | Depends on tool | Yes |
 
-Use SAST for language-specific vulnerability analysis and generic SBOM tools for
-package inventory. Use AgentBOM to explain the AI-specific bill of materials,
-including which agent actors appear connected to sensitive capabilities.
+Use SAST for language-specific vulnerability analysis. Use SBOM tools for
+package inventory. Use AgentBOM to review AI-agent components and statically
+inferred reachable capabilities.
 
 ## Demo Repositories
 
-AgentBOM includes realistic static demos under [`examples/`](examples/):
+AgentBOM includes static demos under [`examples/`](examples/):
 
 - [`examples/customer-support-agent`](examples/customer-support-agent): a
   controlled support agent with documented human approval and policy controls
@@ -153,7 +147,7 @@ AgentBOM includes realistic static demos under [`examples/`](examples/):
   research agent with reachable shell/network behavior and missing policy
   documentation
 
-Run both demos:
+Run the demos:
 
 ```bash
 agentbom scan examples/customer-support-agent --output-dir agentbom-report/support --html --mermaid --sarif --pretty
@@ -190,7 +184,7 @@ Optional reports:
 | Flag | Output | Use |
 | --- | --- | --- |
 | `--html` | `agentbom.html` | self-contained offline report for humans |
-| `--mermaid` | `agentbom.mmd` | GitHub-native attack surface graph |
+| `--mermaid` | `agentbom.mmd` | Mermaid graph |
 | `--sarif` | `agentbom.sarif` | GitHub code scanning and SARIF consumers |
 | `--cyclonedx` | `agentbom.cdx.json` | package ecosystem inventory workflows |
 
@@ -204,8 +198,8 @@ classify tracked findings as introduced, resolved, or unchanged:
 agentbom scan . --baseline agentbom-baseline.json --fail-on-new high --sarif --html --pretty
 ```
 
-`--fail-on-new` accepts `low`, `medium`, `high`, or `critical`. It only evaluates
-new providers, capabilities, MCP servers, secret references, and policy findings
+`--fail-on-new` accepts `low`, `medium`, `high`, or `critical`. It evaluates new
+providers, capabilities, MCP servers, secret references, and policy findings
 introduced since the baseline.
 
 ## Architecture
@@ -229,18 +223,18 @@ Core concepts:
 - Models: concrete model identifiers found in code or configuration.
 - Frameworks: agent and orchestration libraries.
 - Capabilities: static evidence of sensitive actions.
-- Reachable capabilities: actor-to-capability relationships with risk and
-  confidence.
+- Reachable capabilities: static actor-to-capability relationships with risk
+  and confidence.
 - Policy findings: missing controls or custom policy violations.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for implementation details.
 
 ## GitHub Action
 
-Use the bundled action to run AgentBOM in pull requests and keep the
-HTML/JSON/Markdown reports as workflow artifacts. Informational artifact mode is
-recommended for demos and first-time rollout because it keeps CI green without
-creating GitHub code scanning alerts.
+Use the action to run AgentBOM in pull requests and keep reports as workflow
+artifacts. Start with informational mode when adding AgentBOM to an existing
+repository. It publishes reports without failing CI or creating code scanning
+alerts.
 
 ```yaml
 name: AgentBOM
@@ -263,7 +257,7 @@ jobs:
         uses: vlcak27/agentbom@v0.6.0
         with:
           path: .
-          # Informational artifact mode for demos and first-time rollout:
+          # Informational mode:
           # publish reports without blocking CI or creating code scanning alerts.
           fail-on: none
           sarif-upload: false
@@ -321,7 +315,7 @@ Diff gating example for pull requests:
 
 Operating modes:
 
-- Informational artifact mode: use `fail-on: none` with `sarif-upload: false`
+- Informational mode: use `fail-on: none` with `sarif-upload: false`
   and `html: true`. JSON/Markdown/HTML reports are uploaded as artifacts, but
   the workflow does not fail on high or critical risk and does not create code
   scanning alerts.
@@ -329,8 +323,7 @@ Operating modes:
   you want findings visible in GitHub code scanning.
 - Enforcement mode: keep report artifacts enabled, then set
   `fail-on: high` or `fail-on: critical` once the team has reviewed the baseline
-  and documented expected capabilities. This turns AgentBOM from visibility into
-  an explicit security policy.
+  and documented expected capabilities.
 - CI blocking mode: protect branches with the AgentBOM workflow required. In
   this mode, a configured `fail-on` threshold blocks merges when repository risk
   meets or exceeds the threshold while still publishing artifacts, and optionally
@@ -415,6 +408,15 @@ Simplified JSON:
 Secret values are not stored or printed. Secret findings record names such as
 `OPENAI_API_KEY` so reviewers can see which credentials are referenced without
 exposing the values.
+
+## Limitations
+
+- Static analysis only.
+- Findings require human review.
+- No exploit verification.
+- No runtime tracing.
+- No secret value reading.
+- No network calls during scanning.
 
 ## Security Model
 
