@@ -211,8 +211,10 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for implementation details.
 
 ## GitHub Action
 
-Use the bundled action to run AgentBOM in pull requests, upload SARIF, and keep
-the HTML/JSON/Markdown reports as workflow artifacts.
+Use the bundled action to run AgentBOM in pull requests and keep the
+HTML/JSON/Markdown reports as workflow artifacts. Informational artifact mode is
+recommended for demos and first-time rollout because it keeps CI green without
+creating GitHub code scanning alerts.
 
 ```yaml
 name: AgentBOM
@@ -222,6 +224,37 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run AgentBOM
+        uses: vlcak27/agentbom@v0.5.2
+        with:
+          path: .
+          # Informational artifact mode for demos and first-time rollout:
+          # publish reports without blocking CI or creating code scanning alerts.
+          fail-on: none
+          sarif-upload: false
+          html: true
+          output-dir: agentbom-report
+
+      - name: Upload AgentBOM reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentbom-report
+          path: agentbom-report/
+```
+
+SARIF upload is optional. Enable it when you want findings in GitHub code
+scanning:
+
+```yaml
 permissions:
   contents: read
   security-events: write
@@ -236,21 +269,10 @@ jobs:
         uses: vlcak27/agentbom@v0.5.2
         with:
           path: .
-          # Informational mode for demos and first-time rollout:
-          # publish SARIF and reports without blocking CI on findings.
           fail-on: none
           sarif-upload: true
           html: true
           output-dir: agentbom-report
-          # Enforcement examples for teams ready to gate merges:
-          # fail-on: high
-          # fail-on: critical
-
-      - name: Upload AgentBOM reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: agentbom-report
-          path: agentbom-report/
 ```
 
 Diff gating example for pull requests:
@@ -273,18 +295,20 @@ Diff gating example for pull requests:
 
 Operating modes:
 
-- Informational mode: use `fail-on: none` with `sarif-upload: true` and
-  `html: true`. Findings remain visible in GitHub code scanning through SARIF,
-  and JSON/Markdown/HTML reports are uploaded as artifacts, but the workflow does
-  not fail on high or critical risk.
-- Enforcement mode: keep SARIF and report artifacts enabled, then set
+- Informational artifact mode: use `fail-on: none` with `sarif-upload: false`
+  and `html: true`. JSON/Markdown/HTML reports are uploaded as artifacts, but
+  the workflow does not fail on high or critical risk and does not create code
+  scanning alerts.
+- SARIF mode: set `sarif-upload: true` and grant `security-events: write` when
+  you want findings visible in GitHub code scanning.
+- Enforcement mode: keep report artifacts enabled, then set
   `fail-on: high` or `fail-on: critical` once the team has reviewed the baseline
   and documented expected capabilities. This turns AgentBOM from visibility into
   an explicit security policy.
 - CI blocking mode: protect branches with the AgentBOM workflow required. In
   this mode, a configured `fail-on` threshold blocks merges when repository risk
-  meets or exceeds the threshold while still publishing SARIF and artifacts for
-  review.
+  meets or exceeds the threshold while still publishing artifacts, and optionally
+  SARIF, for review.
 
 More details: [`docs/github-action.md`](docs/github-action.md).
 

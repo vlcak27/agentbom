@@ -7,7 +7,6 @@ on:
   pull_request:
 
 permissions:
-  security-events: write
   contents: read
 
 jobs:
@@ -23,10 +22,11 @@ jobs:
         uses: vlcak27/agentbom@v0.5.1
         with:
           path: .
-          # Public demo mode: surface findings in reports and GitHub code scanning,
-          # but do not fail CI on high or critical findings by default.
+          # Public demo mode: keep findings in workflow artifacts without
+          # publishing this repository's intentionally risky examples to
+          # GitHub code scanning.
           fail-on: none
-          sarif-upload: true
+          sarif-upload: false
           html: true
           output-dir: agentbom-report
           # Enforcement examples for teams ready to gate merges:
