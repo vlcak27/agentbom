@@ -450,7 +450,9 @@
             "framework",
             "capability",
             "provider",
+            "prompt",
             "mcp_server",
+            "reachable_capability",
             "mcp_risk"
           ]
         },

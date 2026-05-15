@@ -98,7 +98,10 @@ require:
 Run the policy demo:
 
 ```bash
-agentbom scan examples/mcp-risky-agent --policy examples/policies/mcp-policy.yaml --output-dir agentbom-report/mcp-policy --html --mermaid --sarif --pretty
+agentbom scan examples/mcp-risky-agent \
+  --policy examples/policies/mcp-policy.yaml \
+  --output-dir agentbom-report/mcp-policy \
+  --html --mermaid --sarif --pretty
 ```
 
 ## Reviewer Checklist

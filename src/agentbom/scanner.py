@@ -105,6 +105,7 @@ def scan_path(path: str | Path, policy_path: str | Path | None = None) -> dict[s
         bom["mcp_servers"],
         bom["capabilities"],
         bom["reachable_capabilities"],
+        bom["prompts"],
     )  # type: ignore[arg-type]
     bom["risks"] = score_risks(
         bom["capabilities"], bom["prompts"], bom["mcp_servers"], has_policy  # type: ignore[arg-type]

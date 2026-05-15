@@ -20,8 +20,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="agentbom",
         description=(
-            "Generate an offline bill of materials and attack-surface report "
-            "for AI agent repositories."
+            "Generate offline bill-of-materials and attack-surface reports "
+            "for AI-agent repositories."
         ),
         epilog=(
             "Examples:\n"
@@ -38,14 +38,15 @@ def build_parser() -> argparse.ArgumentParser:
         "scan",
         help="scan a repository",
         description=(
-            "Scan source and configuration files without executing project code, "
-            "then write deterministic AgentBOM reports."
+            "Scan source and configuration files offline without executing "
+            "project code.\n"
+            "JSON and Markdown reports are always written."
         ),
         epilog=(
             "Common workflows:\n"
             "  agentbom scan . --pretty\n"
             "  agentbom scan . --output-dir agentbom-report --html --mermaid\n"
-            "  agentbom scan . --output-dir agentbom-report --sarif --pretty"
+            "  agentbom scan . --baseline agentbom-baseline.json --fail-on-new high --sarif"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -56,17 +57,31 @@ def build_parser() -> argparse.ArgumentParser:
         help="directory for generated reports (default: current directory)",
     )
     scan_parser.add_argument("--policy", help="custom AgentBOM YAML policy file")
-    scan_parser.add_argument("--baseline", help="baseline AgentBOM JSON report for diff output")
-    scan_parser.add_argument(
+    diff_group = scan_parser.add_argument_group("diff and policy gates")
+    diff_group.add_argument("--baseline", help="baseline agentbom.json report for diff output")
+    diff_group.add_argument(
         "--fail-on-new",
         choices=valid_severities(),
         help="exit nonzero when introduced diff findings meet or exceed this severity",
     )
     scan_parser.add_argument("--pretty", action="store_true", help="pretty-print JSON reports")
-    scan_parser.add_argument("--cyclonedx", action="store_true", help="write agentbom.cdx.json")
-    scan_parser.add_argument("--html", action="store_true", help="write offline agentbom.html")
-    scan_parser.add_argument("--mermaid", action="store_true", help="write agentbom.mmd graph")
-    scan_parser.add_argument("--sarif", action="store_true", help="write agentbom.sarif")
+    output_group = scan_parser.add_argument_group("optional reports")
+    output_group.add_argument(
+        "--cyclonedx",
+        action="store_true",
+        help="write agentbom.cdx.json dependency inventory",
+    )
+    output_group.add_argument(
+        "--html",
+        action="store_true",
+        help="write self-contained offline agentbom.html",
+    )
+    output_group.add_argument(
+        "--mermaid",
+        action="store_true",
+        help="write agentbom.mmd capability graph",
+    )
+    output_group.add_argument("--sarif", action="store_true", help="write agentbom.sarif")
     return parser
 
 
@@ -76,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "scan":
         if args.fail_on_new and not args.baseline:
-            parser.error("--fail-on-new requires --baseline")
+            parser.error("--fail-on-new requires --baseline PATH")
         try:
             bom = scan_path(args.path, policy_path=args.policy)
             if args.baseline:

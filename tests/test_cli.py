@@ -28,7 +28,18 @@ def test_cli_help_mentions_core_workflows(capsys):
     assert "--sarif" in help_text
     assert "--baseline" in help_text
     assert "--fail-on-new" in help_text
+    assert "JSON and Markdown reports are always written" in help_text
+    assert "optional reports" in help_text
+    assert "diff and policy gates" in help_text
     assert "Common workflows" in help_text
+
+
+def test_cli_fail_on_new_error_mentions_required_baseline(capsys):
+    with pytest.raises(SystemExit) as exc:
+        main(["scan", ".", "--fail-on-new", "high"])
+
+    assert exc.value.code == 2
+    assert "--fail-on-new requires --baseline PATH" in capsys.readouterr().err
 
 
 def test_cli_generates_json_and_markdown(tmp_path):
@@ -36,7 +47,13 @@ def test_cli_generates_json_and_markdown(tmp_path):
     project.mkdir()
 
     (project / "agent.py").write_text(
-        "import subprocess\nfrom langchain.chat_models import ChatOpenAI\nOPENAI_API_KEY = 'do-not-store'\n",
+        "\n".join(
+            [
+                "import subprocess",
+                "from langchain.chat_models import ChatOpenAI",
+                "OPENAI_API_KEY = 'do-not-store'",
+            ]
+        ),
         encoding="utf-8",
     )
 
@@ -184,7 +201,7 @@ def test_cli_generates_html_when_requested(tmp_path):
     assert "MCP Security Analysis" in html
     assert "Reachable Capabilities" in html
     assert "Policy Findings" in html
-    assert "Prompt Injection Surfaces" in html
+    assert "Prompt Files" in html
     assert "Capability Graph" in html
     assert "score-ring" in html
     assert "severity-" in html

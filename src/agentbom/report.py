@@ -8,19 +8,35 @@ from typing import Any
 
 
 SECTION_DESCRIPTIONS = {
-    "Models": "Model identifiers found in code or configuration. These are the AI decision points reviewers should recognize.",
+    "Models": "Model identifiers found in code or configuration.",
     "Providers": "AI providers or SDKs referenced by the repository.",
-    "Frameworks": "Agent orchestration libraries that may route prompts, tools, memory, or callbacks.",
-    "MCP Security Analysis": "Model Context Protocol servers and configuration files that may expose tools to an agent runtime.",
+    "Frameworks": (
+        "Agent orchestration libraries that may route prompts, tools, memory, or callbacks."
+    ),
+    "MCP Security Analysis": (
+        "Model Context Protocol servers and config files that may expose tools "
+        "to an agent runtime."
+    ),
     "Prompt Files": "Prompt and instruction files that can influence agent behavior.",
-    "Capabilities": "Static evidence of sensitive actions such as shell, network, cloud, database, or code execution.",
+    "Capabilities": (
+        "Static evidence of sensitive actions such as shell, network, database, "
+        "cloud, or code execution."
+    ),
     "Dependencies": "AI, MCP, or sandbox-related dependencies found in package manifests.",
-    "Secret References": "Credential names referenced by the repository. AgentBOM records names only, never values.",
-    "Risks": "Scanner-level review signals derived from the findings above. They are not exploit claims.",
+    "Secret References": (
+        "Credential names referenced by the repository. AgentBOM records names "
+        "only, never values."
+    ),
+    "Risks": (
+        "Scanner-level review signals derived from the findings above. "
+        "They are not exploit claims."
+    ),
 }
 
 
-def write_reports(bom: dict[str, Any], output_dir: str | Path, pretty: bool = False) -> tuple[Path, Path]:
+def write_reports(
+    bom: dict[str, Any], output_dir: str | Path, pretty: bool = False
+) -> tuple[Path, Path]:
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
     json_path = out / "agentbom.json"
@@ -64,9 +80,10 @@ def _reader_guide_section() -> list[str]:
     return [
         "## How to read this report",
         "",
-        "AgentBOM is an offline static scanner. It does not prove exploitability; it gives reviewers a repeatable map of AI-specific components, reachable capabilities, and missing controls.",
+        "AgentBOM is an offline static scanner. It does not prove exploitability.",
         "",
-        "Start with repository risk, reachable capabilities, and policy findings. Then use the component sections to confirm which files introduced each signal.",
+        "Start with repository risk, review priorities, reachable capabilities, "
+        "and policy findings. Then use the component sections to confirm source files.",
         "",
     ]
 
@@ -124,7 +141,7 @@ def _section(title: str, items: list[dict[str, str]]) -> list[str]:
         confidence = item.get("confidence")
         detail = f" ({path})" if path and path != label else ""
         if confidence:
-            detail += f" [{confidence}]"
+            detail += f" [confidence: {confidence}]"
         lines.append(f"- {label}{detail}")
     lines.append("")
     return lines
@@ -142,7 +159,7 @@ def _model_section(items: list[dict[str, str]]) -> list[str]:
         confidence = item.get("confidence")
         detail = f" ({source_file})" if source_file else ""
         if confidence:
-            detail += f" [{confidence}]"
+            detail += f" [confidence: {confidence}]"
         lines.append(f"- {name}{detail}")
     lines.append("")
     return lines
@@ -152,7 +169,8 @@ def _reachable_capability_section(items: list[dict[str, str]]) -> list[str]:
     lines = ["## Reachable Capabilities", ""]
     lines.extend(
         [
-            "Actor-to-capability relationships inferred from deterministic static evidence. These are the best starting points for security review because they connect AI components to sensitive actions.",
+            "Deterministic actor-to-capability relationships. Start here to review "
+            "where AI components appear connected to sensitive actions.",
             "",
         ]
     )
@@ -170,14 +188,19 @@ def _reachable_capability_section(items: list[dict[str, str]]) -> list[str]:
             rationale_detail = f"; rationale: {'; '.join(str(reason) for reason in rationale)}"
         score = item.get("confidence_score")
         score_detail = f"; score: {score}" if score is not None else ""
+        detail = (
+            "[risk: {risk}; confidence: {confidence}{score_detail}"
+            "{path_detail}{server_detail}{rationale_detail}]"
+        ).format(
+            score_detail=score_detail,
+            path_detail=path_detail,
+            server_detail=server_detail,
+            rationale_detail=rationale_detail,
+            **item,
+        )
         lines.append(
-            "- {capability} from {reachable_from} ({source_file}) "
-            "[{risk}, {confidence}{score_detail}{path_detail}{server_detail}{rationale_detail}]".format(
-                score_detail=score_detail,
-                path_detail=path_detail,
-                server_detail=server_detail,
-                rationale_detail=rationale_detail,
-                **item,
+            "- {capability} from {reachable_from} ({source_file}) {detail}".format(
+                detail=detail, **item
             )
         )
     lines.append("")
@@ -205,8 +228,12 @@ def _mcp_security_section(items: list[dict[str, object]]) -> list[str]:
         rationale_detail = ""
         if isinstance(rationale, list) and rationale:
             rationale_detail = f"; rationale: {'; '.join(str(reason) for reason in rationale)}"
+        detail = (
+            f"[risk: {risk}; confidence: {confidence}; status: {status}"
+            f"{category_detail}{metadata}{rationale_detail}]"
+        )
         lines.append(
-            f"- {name} ({path}) [{risk}, {confidence}, {status}{category_detail}{metadata}{rationale_detail}]"
+            f"- {name} ({path}) {detail}"
         )
     lines.append("")
     return lines
@@ -239,7 +266,9 @@ def _dependency_section(items: list[dict[str, str]]) -> list[str]:
         return lines
     for item in items:
         lines.append(
-            "- {name} ({category}, {path}) [{confidence}]".format(**item)
+            "- {name} [category: {category}; path: {path}; confidence: {confidence}]".format(
+                **item
+            )
         )
     lines.append("")
     return lines
@@ -249,7 +278,8 @@ def _policy_finding_section(items: list[dict[str, str]]) -> list[str]:
     lines = ["## Policy Findings", ""]
     lines.extend(
         [
-            "Controls that appear missing or violated based on detected prompts, capabilities, MCP configuration, and any custom AgentBOM policy.",
+            "Controls that appear missing or violated based on prompts, "
+            "capabilities, MCP configuration, and custom policy.",
             "",
         ]
     )
@@ -266,7 +296,8 @@ def _repository_risk_section(item: dict[str, Any]) -> list[str]:
     lines = ["## Repository Risk", ""]
     lines.extend(
         [
-            "A compact review score derived from reachable capabilities, sensitive actions, credential references, and policy gaps.",
+            "A compact review score derived from reachable capabilities, "
+            "sensitive actions, credential references, and policy gaps.",
             "",
         ]
     )
@@ -284,12 +315,13 @@ def _repository_risk_section(item: dict[str, Any]) -> list[str]:
 
 
 def _diff_section(diff: object) -> list[str]:
-    if not isinstance(diff, dict):
+    if not isinstance(diff, dict) or not diff:
         return []
     lines = ["## Diff", ""]
     lines.extend(
         [
-            "Comparison against the supplied baseline report. Finding IDs are stable across runs for the same normalized finding identity.",
+            "Comparison against the supplied baseline report. Finding IDs are stable "
+            "for the same normalized finding identity.",
             "",
         ]
     )

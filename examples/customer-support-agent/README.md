@@ -18,5 +18,7 @@ AgentBOM should detect:
 Run:
 
 ```bash
-agentbom scan examples/customer-support-agent --output-dir agentbom-report/support --html --mermaid --sarif --pretty
+agentbom scan examples/customer-support-agent \
+  --output-dir agentbom-report/support \
+  --html --mermaid --sarif --pretty
 ```

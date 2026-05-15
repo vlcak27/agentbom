@@ -13,7 +13,9 @@ server command and the `CRM_BASE_URL` env variable name without storing the
 value.
 
 ```bash
-agentbom scan examples/customer-support-agent --output-dir agentbom-report/support --html --mermaid --sarif --pretty
+agentbom scan examples/customer-support-agent \
+  --output-dir agentbom-report/support \
+  --html --mermaid --sarif --pretty
 ```
 
 ## mcp-safe-agent
@@ -23,7 +25,9 @@ approval policy documentation. Use it to inspect MCP review signals with
 documented controls.
 
 ```bash
-agentbom scan examples/mcp-safe-agent --output-dir agentbom-report/mcp-safe --html --mermaid --sarif --pretty
+agentbom scan examples/mcp-safe-agent \
+  --output-dir agentbom-report/mcp-safe \
+  --html --mermaid --sarif --pretty
 ```
 
 ## mcp-risky-agent
@@ -34,8 +38,14 @@ AgentBOM records env variable names only. Use it to inspect reachable MCP tool
 invocation and policy findings.
 
 ```bash
-agentbom scan examples/mcp-risky-agent --output-dir agentbom-report/mcp-risky --html --mermaid --sarif --pretty
-agentbom scan examples/mcp-risky-agent --policy examples/policies/mcp-policy.yaml --output-dir agentbom-report/mcp-policy --html --mermaid --sarif --pretty
+agentbom scan examples/mcp-risky-agent \
+  --output-dir agentbom-report/mcp-risky \
+  --html --mermaid --sarif --pretty
+
+agentbom scan examples/mcp-risky-agent \
+  --policy examples/policies/mcp-policy.yaml \
+  --output-dir agentbom-report/mcp-policy \
+  --html --mermaid --sarif --pretty
 ```
 
 ## research-agent
@@ -45,5 +55,7 @@ agent, prompt instructions, network access, and shell execution without policy
 documentation. Use it to inspect review priorities and SARIF output.
 
 ```bash
-agentbom scan examples/research-agent --output-dir agentbom-report/research --html --mermaid --sarif --pretty
+agentbom scan examples/research-agent \
+  --output-dir agentbom-report/research \
+  --html --mermaid --sarif --pretty
 ```

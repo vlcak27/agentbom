@@ -20,7 +20,9 @@ Expected AgentBOM result:
 Run:
 
 ```bash
-agentbom scan examples/mcp-risky-agent --output-dir agentbom-report/mcp-risky --html --mermaid --sarif --pretty
+agentbom scan examples/mcp-risky-agent \
+  --output-dir agentbom-report/mcp-risky \
+  --html --mermaid --sarif --pretty
 ```
 
 Review the HTML report:
@@ -32,7 +34,10 @@ open agentbom-report/mcp-risky/agentbom.html
 Policy example:
 
 ```bash
-agentbom scan examples/mcp-risky-agent --policy examples/policies/mcp-policy.yaml --output-dir agentbom-report/mcp-policy --html --mermaid --sarif --pretty
+agentbom scan examples/mcp-risky-agent \
+  --policy examples/policies/mcp-policy.yaml \
+  --output-dir agentbom-report/mcp-policy \
+  --html --mermaid --sarif --pretty
 ```
 
 Secret handling:

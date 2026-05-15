@@ -82,9 +82,18 @@ configuration appears near agent framework or prompt context.
 Try the MCP demos:
 
 ```bash
-agentbom scan examples/mcp-safe-agent --output-dir agentbom-report/mcp-safe --html --mermaid --sarif --pretty
-agentbom scan examples/mcp-risky-agent --output-dir agentbom-report/mcp-risky --html --mermaid --sarif --pretty
-agentbom scan examples/mcp-risky-agent --policy examples/policies/mcp-policy.yaml --output-dir agentbom-report/mcp-policy --html --mermaid --sarif --pretty
+agentbom scan examples/mcp-safe-agent \
+  --output-dir agentbom-report/mcp-safe \
+  --html --mermaid --sarif --pretty
+
+agentbom scan examples/mcp-risky-agent \
+  --output-dir agentbom-report/mcp-risky \
+  --html --mermaid --sarif --pretty
+
+agentbom scan examples/mcp-risky-agent \
+  --policy examples/policies/mcp-policy.yaml \
+  --output-dir agentbom-report/mcp-policy \
+  --html --mermaid --sarif --pretty
 ```
 
 AgentBOM does not execute MCP servers, contact networks, or store env values.
@@ -150,10 +159,21 @@ AgentBOM includes static demos under [`examples/`](examples/):
 Run the demos:
 
 ```bash
-agentbom scan examples/customer-support-agent --output-dir agentbom-report/support --html --mermaid --sarif --pretty
-agentbom scan examples/mcp-safe-agent --output-dir agentbom-report/mcp-safe --html --mermaid --sarif --pretty
-agentbom scan examples/mcp-risky-agent --output-dir agentbom-report/mcp-risky --html --mermaid --sarif --pretty
-agentbom scan examples/research-agent --output-dir agentbom-report/research --html --mermaid --sarif --pretty
+agentbom scan examples/customer-support-agent \
+  --output-dir agentbom-report/support \
+  --html --mermaid --sarif --pretty
+
+agentbom scan examples/mcp-safe-agent \
+  --output-dir agentbom-report/mcp-safe \
+  --html --mermaid --sarif --pretty
+
+agentbom scan examples/mcp-risky-agent \
+  --output-dir agentbom-report/mcp-risky \
+  --html --mermaid --sarif --pretty
+
+agentbom scan examples/research-agent \
+  --output-dir agentbom-report/research \
+  --html --mermaid --sarif --pretty
 ```
 
 See the [demo workflow](docs/demo-workflow.md) for a repeatable walkthrough.
@@ -163,7 +183,7 @@ See the [demo workflow](docs/demo-workflow.md) for a repeatable walkthrough.
 | Area | Examples |
 | --- | --- |
 | Providers | OpenAI, Anthropic, Gemini, Ollama, DeepSeek, OpenRouter |
-| Models | Static model identifiers such as `gpt-5.5`, `gpt-5.4-mini`, `gpt-4o-mini`, `o3`, `claude-opus-4.7`, `gemini-2.5-pro`, `deepseek-reasoner`, `llama3.3`, `qwen3`, `openrouter/openai/gpt-5.5` |
+| Models | Static model identifiers such as `gpt-5.5`, `gpt-4o-mini`, `claude-opus-4.7`, `gemini-2.5-pro`, `deepseek-reasoner`, `llama3.3`, and provider-prefixed router strings |
 | Frameworks | LangChain, LangGraph, LlamaIndex, CrewAI, AutoGen, Semantic Kernel |
 | MCP | `mcp.json`, `.mcp.json`, `claude_desktop_config.json`, nested Cursor/Claude MCP config paths |
 | MCP server risk | filesystem, shell/process, browser/network, database, cloud, secrets/env, unknown/custom servers |
@@ -346,7 +366,8 @@ agentbom scan /path/to/agent-repo --output-dir agentbom-report --html
 agentbom scan /path/to/agent-repo --output-dir agentbom-report --mermaid
 agentbom scan /path/to/agent-repo --output-dir agentbom-report --sarif
 agentbom scan /path/to/agent-repo --policy agentbom-policy.yaml --sarif --pretty
-agentbom scan /path/to/agent-repo --baseline agentbom-baseline.json --fail-on-new high --sarif --pretty
+agentbom scan /path/to/agent-repo --baseline agentbom-baseline.json \
+  --fail-on-new high --sarif --pretty
 ```
 
 Example policy:
@@ -415,7 +436,7 @@ exposing the values.
 - Findings require human review.
 - No exploit verification.
 - No runtime tracing.
-- No secret value reading.
+- No secret value reporting.
 - No network calls during scanning.
 
 ## Security Model

@@ -24,11 +24,11 @@ inputs:
     default: "false"
 
   cyclonedx:
-    description: "Generate CycloneDX"
+    description: "Generate agentbom.cdx.json dependency inventory"
     default: "false"
 
   output-dir:
-    description: "Output directory"
+    description: "Directory for generated AgentBOM reports"
     default: "agentbom-report"
 
 outputs:

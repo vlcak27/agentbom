@@ -18,7 +18,9 @@ Expected AgentBOM result:
 Run:
 
 ```bash
-agentbom scan examples/mcp-safe-agent --output-dir agentbom-report/mcp-safe --html --mermaid --sarif --pretty
+agentbom scan examples/mcp-safe-agent \
+  --output-dir agentbom-report/mcp-safe \
+  --html --mermaid --sarif --pretty
 ```
 
 Review the HTML report:

@@ -29,12 +29,19 @@ CAPABILITY_SEVERITIES = {
 
 
 def load_baseline_report(path: str | Path) -> dict[str, Any]:
+    baseline_path = Path(path)
+    if not baseline_path.exists():
+        raise FileNotFoundError(f"baseline report does not exist: {baseline_path}")
+    if not baseline_path.is_file():
+        raise FileNotFoundError(f"baseline report is not a file: {baseline_path}")
     try:
-        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        data = json.loads(baseline_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        raise ValueError(f"invalid baseline JSON: {path}") from exc
+        raise ValueError(
+            f"invalid baseline JSON at line {exc.lineno}, column {exc.colno}: {baseline_path}"
+        ) from exc
     if not isinstance(data, dict):
-        raise ValueError(f"baseline report must be a JSON object: {path}")
+        raise ValueError(f"baseline report must be a JSON object: {baseline_path}")
     return data
 
 

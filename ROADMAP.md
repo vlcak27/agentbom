@@ -1,8 +1,8 @@
 # AgentBOM Roadmap
 
-AgentBOM v0.5.0 has the core public adoption surface in place: PyPI package,
-HTML reports, Mermaid export, SARIF integration, CycloneDX export, GitHub
-Action, realistic examples, and onboarding documentation.
+AgentBOM has the core public adoption surface in place: PyPI package, HTML
+reports, Mermaid export, SARIF integration, CycloneDX export, GitHub Action,
+realistic examples, and onboarding documentation.
 
 The roadmap below is intentionally conservative. AgentBOM should remain
 offline-first, deterministic, dependency-light, and safe to run on untrusted
@@ -10,15 +10,14 @@ repositories.
 
 ## Current Focus
 
-- v0.6.0: MCP Security Analysis as the next major differentiator.
+- Keep MCP Security Analysis precise, explainable, and easy to review.
 - Keep detector accuracy improvements offline and deterministic.
 - Keep report outputs stable and easy to diff.
 - Make CI adoption simple without requiring hosted services.
 
 ## v0.6.0 MCP Security Analysis
 
-Status: implemented and in pre-release audit. It is not released until the
-v0.6.0 version bump and tag are created.
+Status: implemented.
 
 - Detect common MCP JSON config files, including `mcp.json`, `.mcp.json`,
   `claude_desktop_config.json`, and nested Cursor/Claude paths.
