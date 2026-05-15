@@ -7,7 +7,8 @@ meets a chosen threshold.
 For demos, first-time rollout, and public repositories with intentional examples,
 start with informational artifact mode. This keeps CI green and makes the
 JSON/Markdown/HTML reports available without creating GitHub code scanning
-alerts.
+alerts. The action defaults are stricter, so set `fail-on: none` and
+`sarif-upload: false` explicitly when you want a non-blocking first run.
 
 ```yaml
 name: AgentBOM
@@ -27,7 +28,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run AgentBOM
-        uses: vlcak27/agentbom@v0.5.1
+        uses: vlcak27/agentbom@v0.6.0
         with:
           path: .
           # Informational artifact mode for demos and first-time rollout:
@@ -44,8 +45,8 @@ jobs:
           path: agentbom-report/
 ```
 
-SARIF upload is optional. Enable it when you want AgentBOM findings to appear in
-GitHub code scanning:
+SARIF upload is optional. Enable it only when you want AgentBOM findings to
+appear in GitHub code scanning:
 
 ```yaml
 permissions:
@@ -59,7 +60,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run AgentBOM
-        uses: vlcak27/agentbom@v0.5.1
+        uses: vlcak27/agentbom@v0.6.0
         with:
           path: .
           fail-on: none
@@ -68,9 +69,26 @@ jobs:
           output-dir: agentbom-report
 ```
 
-Use `fail-on: none` for informational mode when introducing AgentBOM to an
-existing repository and collecting a baseline. Enforcement mode is optional: set
-`fail-on: high` or `fail-on: critical` after expected capabilities are
-documented. For CI blocking mode, make the workflow a required branch protection
-check so the configured threshold blocks merges while report artifacts, and
-optionally SARIF, remain available for review.
+## Modes
+
+Informational mode:
+
+- Set `fail-on: none`.
+- Set `sarif-upload: false`.
+- Keep `html: true` and upload `agentbom-report/` as an artifact.
+- Use this mode to collect a baseline without failing CI.
+
+SARIF review mode:
+
+- Set `sarif-upload: true`.
+- Grant `security-events: write`.
+- Keep `fail-on: none` if you want code scanning alerts without blocking CI.
+
+Enforcement mode:
+
+- Set `fail-on: high` or `fail-on: critical` after expected capabilities are
+  documented.
+- Keep report artifacts enabled so reviewers can inspect the reason for a
+  failure.
+- Make the workflow a required branch protection check only after the threshold
+  is accepted by the team.

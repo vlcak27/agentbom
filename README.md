@@ -5,15 +5,16 @@
 ![Python](https://img.shields.io/pypi/pyversions/ai-agentbom)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-Offline bill of materials and attack surface analysis for AI agent repositories.
+AgentBOM is an offline CLI for reviewing AI agent repositories. It generates a
+bill of materials and attack surface report for AI providers, model identifiers,
+frameworks, prompts, MCP servers, policy gaps, and sensitive capabilities.
 
-AgentBOM helps reviewers answer a practical question: what AI providers, model
-identifiers, frameworks, prompts, MCP configuration, and sensitive capabilities
-exist in this agent repository, and which of those capabilities appear reachable
-from an AI actor?
+Use it to answer a practical review question: what agent components exist in
+this repository, and which capabilities appear reachable from an AI actor?
 
-It does not execute scanned code, import scanned modules, read secret values, or
-require network access.
+AgentBOM does not execute scanned code, import scanned modules, contact
+networks, or store secret values. Findings are review signals for humans, not
+proof of exploitability.
 
 ![AgentBOM HTML report preview](docs/assets/html-report-preview.svg)
 
@@ -51,12 +52,36 @@ Risk: high (70/100)
 
 ![AgentBOM quickstart terminal demo](docs/assets/terminal-demo.svg)
 
+## Screenshots
+
+Current preview assets:
+
+- [HTML report preview](docs/assets/html-report-preview.svg): shows the
+  repository risk summary, findings, and report navigation.
+- [Terminal demo](docs/assets/terminal-demo.svg): shows install, scan, generated
+  report files, and risk output.
+- [Architecture flow](docs/assets/architecture-flow.svg): shows the static
+  analysis pipeline.
+
+Recommended screenshot paths for launch images:
+
+- `docs/images/terminal-quickstart.png`: copy-paste install and scan output.
+- `docs/images/html-report-summary.png`: top of `agentbom.html` with risk,
+  providers, frameworks, and reachable capabilities visible.
+- `docs/images/mcp-security-analysis.png`: MCP server table with risk
+  categories and env variable names only.
+- `docs/images/github-action-artifact-mode.png`: GitHub Action run with
+  uploaded artifacts and passing CI.
+
+See [`docs/images/README.md`](docs/images/README.md) for screenshot guidance.
+
 ## MCP Security Analysis
 
 MCP servers can give an agent access to local files, command execution,
-browsers, databases, cloud APIs, and env-backed services. AgentBOM v0.6.0 maps
-those configured servers, records safe metadata, and connects MCP tool exposure
-to agent framework or prompt context for review.
+browsers, databases, cloud APIs, and env-backed services. AgentBOM v0.6.0 parses
+MCP JSON configuration safely, records metadata such as command, args, package,
+transport, and env variable names, then connects MCP tool exposure to agent
+framework or prompt context for review.
 
 Try the MCP demos:
 
@@ -67,7 +92,8 @@ agentbom scan examples/mcp-risky-agent --policy examples/policies/mcp-policy.yam
 ```
 
 AgentBOM does not execute MCP servers, contact networks, or store env values.
-Findings are review signals, not proof of exploitability. See
+It records env variable names only, never secret values. Findings are review
+signals, not proof of exploitability. See
 [`docs/mcp-security-analysis.md`](docs/mcp-security-analysis.md).
 
 ## Why AgentBOM
@@ -234,7 +260,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run AgentBOM
-        uses: vlcak27/agentbom@v0.5.2
+        uses: vlcak27/agentbom@v0.6.0
         with:
           path: .
           # Informational artifact mode for demos and first-time rollout:
@@ -266,7 +292,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run AgentBOM
-        uses: vlcak27/agentbom@v0.5.2
+        uses: vlcak27/agentbom@v0.6.0
         with:
           path: .
           fail-on: none

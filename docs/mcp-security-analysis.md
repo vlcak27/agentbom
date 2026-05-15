@@ -31,10 +31,11 @@ For parsed MCP servers, AgentBOM records:
 
 ## Safe Parsing Model
 
-AgentBOM parses MCP configuration as JSON only. It does not execute MCP servers,
-does not run configured commands, does not import scanned code, and does not
-contact networks. Invalid JSON is handled as a report finding instead of
-failing the scan.
+AgentBOM parses MCP configuration as data. It reads JSON MCP config files,
+extracts fields, and applies deterministic patterns. It does not execute MCP
+servers, does not run configured commands, does not import scanned code, and
+does not contact networks. Invalid JSON is handled as a report finding instead
+of failing the scan.
 
 The scanner keeps the same repository safety rules used elsewhere in AgentBOM:
 large files are skipped, binary-looking files are skipped, and symlink loops are
@@ -43,13 +44,15 @@ not followed.
 ## Secret Handling
 
 AgentBOM records env variable names only. For example, an MCP config containing
-`BRAVE_SEARCH_API_KEY` is reported as that name, but the value is not stored or
-printed. Secret-looking args such as `--token value` are redacted in output.
+`BRAVE_SEARCH_API_KEY` is reported as that name, but the value is not resolved,
+stored, or printed. Secret-looking args such as `--token value` are redacted in
+output.
 
 ## Risk Categories
 
 MCP server risk is assigned with deterministic pattern matching. Categories are
-intended to help reviewers prioritize, not to claim that a server is exploitable.
+intended to help reviewers prioritize where access could matter if the server is
+enabled and reachable. They do not claim that a server is exploitable.
 
 | Category | Review question |
 | --- | --- |
@@ -64,9 +67,14 @@ intended to help reviewers prioritize, not to claim that a server is exploitable
 ## Reachability
 
 AgentBOM marks MCP tool invocation as reachable when parsed MCP server config
-exists alongside an agent framework or prompt configuration. The reachable
-finding includes the MCP server name, source file, risk categories, and
-rationale. This is an inferred static relationship, not runtime proof.
+exists alongside an agent framework or prompt configuration. In plain terms:
+there is static evidence of an agent runtime or prompt surface, and there is MCP
+configuration in the same repository. The reachable finding includes the MCP
+server name, source file, risk categories, and rationale.
+
+Reachability is an inferred static relationship. It is useful for review
+triage, but it is not runtime proof that a model can call a specific tool in a
+deployed environment.
 
 ## Policy Controls
 
@@ -92,6 +100,23 @@ Run the policy demo:
 ```bash
 agentbom scan examples/mcp-risky-agent --policy examples/policies/mcp-policy.yaml --output-dir agentbom-report/mcp-policy --html --mermaid --sarif --pretty
 ```
+
+## Reviewer Checklist
+
+Use this checklist when reviewing MCP findings:
+
+- Confirm whether each MCP server is expected for the repository.
+- Check the source config path and server command before trusting the category.
+- Treat `shell_process_execution`, `filesystem_access`, `cloud_access`, and
+  `database_access` as first-review items.
+- Confirm whether env variable names are placeholders, CI-only credentials, or
+  production credential references.
+- Look for documented controls: sandboxing, read-only mode, allowlists, human
+  approval, or least-privilege credentials.
+- Review reachable `mcp_tool_invocation` findings next to framework and prompt
+  findings.
+- Decide whether policy rules should deny specific server names or risk
+  categories.
 
 ## Reviewing Findings
 

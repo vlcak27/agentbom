@@ -4,6 +4,9 @@ This static demo shows a controlled MCP setup. The agent has a prompt, a simple
 LangChain model call, a low-risk local memory MCP server, and policy text that
 requires human approval before tool output is used.
 
+AgentBOM scans this directory as text. Do not run the demo agent or install its
+requirements for the scan.
+
 Expected AgentBOM result:
 
 - OpenAI provider and `gpt-4o`
@@ -17,3 +20,15 @@ Run:
 ```bash
 agentbom scan examples/mcp-safe-agent --output-dir agentbom-report/mcp-safe --html --mermaid --sarif --pretty
 ```
+
+Review the HTML report:
+
+```bash
+open agentbom-report/mcp-safe/agentbom.html
+```
+
+Secret handling:
+
+- The code references `OPENAI_API_KEY` by env variable name only.
+- No secret value is included in this example.
+- AgentBOM reports credential names for review and does not store values.
