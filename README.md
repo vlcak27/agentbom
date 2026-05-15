@@ -51,6 +51,25 @@ Risk: high (70/100)
 
 ![AgentBOM quickstart terminal demo](docs/assets/terminal-demo.svg)
 
+## MCP Security Analysis
+
+MCP servers can give an agent access to local files, command execution,
+browsers, databases, cloud APIs, and env-backed services. AgentBOM v0.6.0 maps
+those configured servers, records safe metadata, and connects MCP tool exposure
+to agent framework or prompt context for review.
+
+Try the MCP demos:
+
+```bash
+agentbom scan examples/mcp-safe-agent --output-dir agentbom-report/mcp-safe --html --mermaid --sarif --pretty
+agentbom scan examples/mcp-risky-agent --output-dir agentbom-report/mcp-risky --html --mermaid --sarif --pretty
+agentbom scan examples/mcp-risky-agent --policy examples/policies/mcp-policy.yaml --output-dir agentbom-report/mcp-policy --html --mermaid --sarif --pretty
+```
+
+AgentBOM does not execute MCP servers, contact networks, or store env values.
+Findings are review signals, not proof of exploitability. See
+[`docs/mcp-security-analysis.md`](docs/mcp-security-analysis.md).
+
 ## Why AgentBOM
 
 AI agents combine model output with software capabilities. A dependency list,
@@ -99,6 +118,11 @@ AgentBOM includes realistic static demos under [`examples/`](examples/):
 
 - [`examples/customer-support-agent`](examples/customer-support-agent): a
   controlled support agent with documented human approval and policy controls
+- [`examples/mcp-safe-agent`](examples/mcp-safe-agent): a controlled MCP demo
+  with local memory server metadata and human approval documentation
+- [`examples/mcp-risky-agent`](examples/mcp-risky-agent): an MCP-focused demo
+  with filesystem, shell/process, browser/network, database, cloud, and env
+  backed server configuration
 - [`examples/research-agent`](examples/research-agent): an intentionally riskier
   research agent with reachable shell/network behavior and missing policy
   documentation
@@ -107,6 +131,8 @@ Run both demos:
 
 ```bash
 agentbom scan examples/customer-support-agent --output-dir agentbom-report/support --html --mermaid --sarif --pretty
+agentbom scan examples/mcp-safe-agent --output-dir agentbom-report/mcp-safe --html --mermaid --sarif --pretty
+agentbom scan examples/mcp-risky-agent --output-dir agentbom-report/mcp-risky --html --mermaid --sarif --pretty
 agentbom scan examples/research-agent --output-dir agentbom-report/research --html --mermaid --sarif --pretty
 ```
 
@@ -155,33 +181,6 @@ agentbom scan . --baseline agentbom-baseline.json --fail-on-new high --sarif --h
 `--fail-on-new` accepts `low`, `medium`, `high`, or `critical`. It only evaluates
 new providers, capabilities, MCP servers, secret references, and policy findings
 introduced since the baseline.
-
-## MCP Security Analysis
-
-AgentBOM treats MCP configuration as a first-class attack surface. It detects
-common JSON MCP config files, parses server definitions without executing code
-or contacting networks, and records only safe metadata:
-
-- server name, source file, confidence, command, args, transport, and package or
-  binary name
-- env variable names only, never env values
-- deterministic risk categories for filesystem access, shell/process execution,
-  browser/network access, database access, cloud access, secrets/env access, and
-  unknown/custom servers
-- reachability when an agent framework or prompt configuration exists alongside
-  MCP server config
-
-High-risk MCP servers appear in Markdown, HTML, Mermaid, JSON, and SARIF output.
-Custom policy files can deny MCP server names or risk categories:
-
-```yaml
-deny_mcp_servers:
-  - filesystem
-
-deny_mcp_risk_categories:
-  - shell_process_execution
-  - secrets_env_access
-```
 
 ## Architecture
 

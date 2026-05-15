@@ -1,0 +1,11 @@
+deny_mcp_servers:
+  - shell-runner
+  - cloud-admin
+
+deny_mcp_risk_categories:
+  - filesystem_access
+  - shell_process_execution
+  - secrets_env_access
+
+require:
+  human_approval: true

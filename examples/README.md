@@ -16,6 +16,28 @@ without storing the value.
 agentbom scan examples/customer-support-agent --output-dir agentbom-report/support --html --mermaid --sarif --pretty
 ```
 
+## mcp-safe-agent
+
+A controlled MCP example with a local memory server, prompt context, and human
+approval policy documentation. This is useful for showing low-risk MCP review
+signals and clean report output.
+
+```bash
+agentbom scan examples/mcp-safe-agent --output-dir agentbom-report/mcp-safe --html --mermaid --sarif --pretty
+```
+
+## mcp-risky-agent
+
+An MCP-focused example with filesystem, shell/process, browser/network,
+database, cloud, and env-backed server configuration. Values are placeholders;
+AgentBOM records env variable names only. Use it to demonstrate reachable MCP
+tool invocation and policy findings.
+
+```bash
+agentbom scan examples/mcp-risky-agent --output-dir agentbom-report/mcp-risky --html --mermaid --sarif --pretty
+agentbom scan examples/mcp-risky-agent --policy examples/policies/mcp-policy.yaml --output-dir agentbom-report/mcp-policy --html --mermaid --sarif --pretty
+```
+
 ## research-agent
 
 An intentionally riskier research automation example with a CrewAI/Anthropic

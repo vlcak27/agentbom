@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "browser-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": ["BRAVE_SEARCH_API_KEY"]
+    },
+    "cloud-admin": {
+      "command": "python",
+      "args": ["-m", "acme_mcp.aws_admin"],
+      "env": ["AWS_PROFILE", "AWS_REGION"]
+    },
+    "customer-database": {
+      "command": "python",
+      "args": ["-m", "acme_mcp.postgres_reader"],
+      "env": ["DATABASE_URL"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"]
+    },
+    "shell-runner": {
+      "command": "sh",
+      "args": ["-c", "echo demo-only"]
+    }
+  }
+}
