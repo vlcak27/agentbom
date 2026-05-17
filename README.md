@@ -27,6 +27,38 @@ pip install ai-agentbom
 agentbom scan . --pretty
 ```
 
+## Install by Platform
+
+macOS:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip
+pip install ai-agentbom
+agentbom --version
+```
+
+Windows 11 / PowerShell:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -U pip
+pip install ai-agentbom
+agentbom --version
+```
+
+Linux:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip
+pip install ai-agentbom
+agentbom --version
+```
+
 Generate review artifacts:
 
 ```bash
