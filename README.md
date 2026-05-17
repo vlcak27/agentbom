@@ -52,7 +52,7 @@ Optional outputs:
 | Area | Examples |
 | --- | --- |
 | Providers | OpenAI, Anthropic, Gemini, Ollama, DeepSeek, OpenRouter |
-| Models | `gpt-5.1`, `gpt-4o-mini`, `o3-mini`, `claude-sonnet-4.6`, `gemini-3.1-pro`, `deepseek-r1`, `llama-3.3-70b-instruct`, `qwen2.5-coder`, `grok-4`, `command-r-plus`, `sonar-pro`, OpenRouter and LiteLLM-prefixed model strings |
+| Models | Modern static model identifiers across OpenAI GPT/o-series, Anthropic Claude 3.x/4.x, Gemini, DeepSeek, Llama/Code Llama, Mistral/Codestral/Mixtral, Qwen, Grok/xAI, Cohere Command, and Perplexity Sonar. Examples: `gpt-5.5`, `gpt-5.1`, `gpt-4o-mini`, `o3-mini`, `claude-opus-4.7`, `opus4.7`, `claude-sonnet-4.6`, `claude-3.7-sonnet`, `gemini-3.1-pro`, `gemini-3.1-flash`, `deepseek-r1`, `llama-3.3-70b-instruct`, `qwen2.5-coder`, `grok-4`, `command-r-plus`, `sonar-pro`, plus OpenRouter/LiteLLM/provider-prefixed strings such as `openrouter/anthropic/claude-opus-4.7` and `litellm/openai/gpt-5.5`. |
 | Frameworks | LangChain, LangGraph, LlamaIndex, CrewAI, AutoGen/AG2, Semantic Kernel, Pydantic AI, OpenAI Agents SDK, Claude Agent SDK, Mastra, Google ADK, Vercel AI SDK, LiteLLM, Instructor, Haystack, DSPy, LangServe |
 | Prompts | `AGENTS.md`, `CLAUDE.md`, `prompts/*.md`, prompt YAML |
 | MCP | `mcp.json`, `.mcp.json`, `claude_desktop_config.json`, nested Cursor/Claude MCP config paths |
@@ -62,9 +62,10 @@ Optional outputs:
 | Dependencies | deterministic AI-relevant dependency extraction from Python, JavaScript, Rust, and Go manifests |
 | Policy gaps | prompt files, MCP config, shell/cloud access without policy documentation |
 
+Model examples are representative of current detector coverage, not an exhaustive catalog.
+
 Findings include source paths, confidence, reviewer-facing rationale, and
 mitigation signals where static evidence is available.
-
 ## Reports
 
 Start with repository risk, review priorities, reachable capabilities, MCP
