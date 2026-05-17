@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from agentbom.scanner import MAX_FILE_SIZE, scan_path
@@ -289,7 +290,7 @@ def test_dependency_analysis_parses_pyproject_and_requirements(tmp_path):
         "\n".join(
             [
                 "[project]",
-                'dependencies = ["langchain>=0.2", "mcp", "requests"]',
+                'dependencies = ["langchain>=0.2", "pydantic-ai", "mcp", "requests"]',
                 "",
                 "[project.optional-dependencies]",
                 'sandbox = ["e2b>=1"]',
@@ -313,6 +314,12 @@ def test_dependency_analysis_parses_pyproject_and_requirements(tmp_path):
 
     assert {
         "name": "langchain",
+        "category": "ai_framework",
+        "path": "pyproject.toml",
+        "confidence": "medium",
+    } in data["dependencies"]
+    assert {
+        "name": "pydantic-ai",
         "category": "ai_framework",
         "path": "pyproject.toml",
         "confidence": "medium",
@@ -350,6 +357,129 @@ def test_dependency_analysis_parses_pyproject_and_requirements(tmp_path):
     assert not any(item["name"] == "pytest" for item in data["dependencies"])
 
 
+def test_dependency_analysis_parses_js_rust_and_go_manifests(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "package.json").write_text(
+        json.dumps(
+            {
+                "dependencies": {
+                    "@mastra/core": "^0.1.0",
+                    "ai": "^4.0.0",
+                    "@ai-sdk/openai": "^1.0.0",
+                    "left-pad": "^1.3.0",
+                },
+                "devDependencies": {
+                    "@anthropic-ai/claude-agent-sdk": "^0.1.0",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (project / "package-lock.json").write_text(
+        json.dumps(
+            {
+                "packages": {
+                    "": {"dependencies": {"@openai/agents": "^0.1.0"}},
+                    "node_modules/@anthropic-ai/sdk": {"version": "0.1.0"},
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    (project / "pnpm-lock.yaml").write_text(
+        "\n".join(
+            [
+                "dependencies:",
+                "  '@google/genai':",
+                "    specifier: ^1.0.0",
+                "    version: 1.0.0",
+                "packages:",
+                "  '@mastra/core@0.1.0':",
+                "    resolution: {}",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (project / "yarn.lock").write_text(
+        "\n".join(
+            [
+                '"@ai-sdk/anthropic@^1.0.0":',
+                "  version 1.0.0",
+                '"ai@^4.0.0":',
+                "  version 4.0.0",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (project / "Cargo.toml").write_text(
+        "\n".join(
+            [
+                "[dependencies]",
+                'async-openai = "0.28"',
+                'rig-core = "0.10"',
+                "",
+                "[dev-dependencies]",
+                'serde = "1"',
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (project / "go.mod").write_text(
+        "\n".join(
+            [
+                "module example.com/agent",
+                "",
+                "require (",
+                "    github.com/sashabaranov/go-openai v1.40.0",
+                "    github.com/stretchr/testify v1.9.0",
+                ")",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    data = scan_path(project)
+    dependencies = {
+        (item["name"], item["category"], item["path"], item["confidence"])
+        for item in data["dependencies"]
+    }
+
+    assert ("@mastra/core", "ai_framework", "package.json", "medium") in dependencies
+    assert ("ai", "ai_framework", "package.json", "medium") in dependencies
+    assert ("@ai-sdk/openai", "provider_sdk", "package.json", "medium") in dependencies
+    assert (
+        "@anthropic-ai/claude-agent-sdk",
+        "ai_framework",
+        "package.json",
+        "medium",
+    ) in dependencies
+    assert ("@openai/agents", "ai_framework", "package-lock.json", "medium") in dependencies
+    assert ("@anthropic-ai/sdk", "provider_sdk", "package-lock.json", "medium") in dependencies
+    assert ("@google/genai", "provider_sdk", "pnpm-lock.yaml", "medium") in dependencies
+    assert ("@mastra/core", "ai_framework", "pnpm-lock.yaml", "medium") in dependencies
+    assert ("@ai-sdk/anthropic", "provider_sdk", "yarn.lock", "medium") in dependencies
+    assert ("ai", "ai_framework", "yarn.lock", "medium") in dependencies
+    assert ("async-openai", "provider_sdk", "Cargo.toml", "medium") in dependencies
+    assert (
+        "github.com/sashabaranov/go-openai",
+        "provider_sdk",
+        "go.mod",
+        "medium",
+    ) in dependencies
+    assert not any(item["name"] in {"left-pad", "serde"} for item in data["dependencies"])
+
+
+def test_dependency_analysis_keeps_js_only_ai_package_out_of_python_manifests(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "requirements.txt").write_text("ai==1.0.0\n", encoding="utf-8")
+
+    data = scan_path(project)
+
+    assert data["dependencies"] == []
+
+
 def test_generic_secret_names_without_provider_context_are_ignored(tmp_path):
     project = tmp_path / "agent"
     project.mkdir()
@@ -361,6 +491,25 @@ def test_generic_secret_names_without_provider_context_are_ignored(tmp_path):
     data = scan_path(project)
 
     assert data["secret_references"] == []
+
+
+def test_secret_reference_detection_does_not_store_secret_values(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    secret_value = "sk-do-not-store-this-value"
+    (project / "agent.py").write_text(
+        f"from openai import OpenAI\nOPENAI_API_KEY = {secret_value!r}\n",
+        encoding="utf-8",
+    )
+
+    data = scan_path(project)
+
+    assert {
+        "name": "OPENAI_API_KEY",
+        "path": "agent.py",
+        "confidence": "high",
+    } in data["secret_references"]
+    assert secret_value not in json.dumps(data, sort_keys=True)
 
 
 def test_reachable_capabilities_connect_model_to_risky_capabilities(tmp_path):
@@ -409,6 +558,37 @@ def test_reachable_capabilities_connect_model_to_risky_capabilities(tmp_path):
         "confidence_score": 100,
         "paths": ["network_execution"],
     })
+
+
+def test_high_risk_reachability_includes_rationale_and_mitigations(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "agent.py").write_text(
+        "\n".join(
+            [
+                "import subprocess",
+                "model = 'gpt-4o'",
+                "# Human approval required before tools run inside a sandbox.",
+                "subprocess.run(['echo', 'hello'])",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    data = scan_path(project)
+    finding = next(
+        item
+        for item in data["reachable_capabilities"]
+        if item["capability"] == "code_execution"
+    )
+
+    assert finding["risk"] == "high"
+    assert finding["mitigations"] == ["human approval control", "sandbox control"]
+    assert finding["confidence_score"] == 90
+    rationale = " ".join(finding["rationale"])
+    assert "model gpt-4o can reach code_execution in agent.py" in rationale
+    assert "same source file" in rationale
+    assert "risk is retained for review" in rationale
 
 
 def test_reachable_capabilities_use_framework_when_no_model_is_detected(tmp_path):
@@ -526,6 +706,60 @@ def test_scanner_detects_autonomous_execution_capability(tmp_path):
         "confidence_score": 100,
         "paths": ["tool_invocation"],
     })
+
+
+def test_autonomous_execution_in_tests_is_lower_confidence(tmp_path):
+    project = tmp_path / "agent"
+    tests_dir = project / "tests"
+    tests_dir.mkdir(parents=True)
+    (tests_dir / "test_agent.py").write_text(
+        "\n".join(
+            [
+                "model = 'gpt-4o'",
+                "while True:",
+                "    agent.run()",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    data = scan_path(project)
+
+    assert {
+        "name": "autonomous_execution",
+        "path": "tests/test_agent.py",
+        "confidence": "medium",
+    } in data["capabilities"]
+    assert_reachable_contains(data["reachable_capabilities"], {
+        "capability": "autonomous_execution",
+        "reachable_from": "gpt-4o",
+        "source_file": "tests/test_agent.py",
+        "risk": "high",
+        "confidence": "medium",
+        "confidence_score": 85,
+        "paths": ["tool_invocation"],
+    })
+
+
+def test_single_agent_run_call_is_not_autonomous_execution(tmp_path):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "agent.py").write_text(
+        "model = 'gpt-4o'\nagent.run('one task')\n",
+        encoding="utf-8",
+    )
+
+    data = scan_path(project)
+
+    assert {
+        "name": "autonomous_execution",
+        "path": "agent.py",
+        "confidence": "high",
+    } not in data["capabilities"]
+    assert not any(
+        item["capability"] == "autonomous_execution"
+        for item in data["reachable_capabilities"]
+    )
 
 
 def test_scanner_detects_autonomous_execution_config_flags(tmp_path):

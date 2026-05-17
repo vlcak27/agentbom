@@ -338,6 +338,12 @@
             "type": "string"
           }
         },
+        "mitigations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "rationale": {
           "type": "array",
           "items": {

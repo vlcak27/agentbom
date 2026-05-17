@@ -31,7 +31,7 @@ SECTION_HELP = {
         "The same capability relationships represented as nodes and edges for "
         "architectural review."
     ),
-    "diff": "Changes relative to the supplied baseline report.",
+    "diff": "Changes since the supplied baseline report.",
 }
 
 
@@ -99,7 +99,7 @@ def _sidebar(bom: dict[str, Any]) -> str:
         ("Capability Graph", "graph"),
     ]
     if _dict(bom.get("diff")):
-        sections.insert(1, ("Diff", "diff"))
+        sections.insert(1, ("Changes", "diff"))
     links = "\n".join(
         f'<a href="#{section_id}">{escape(label)}</a>' for label, section_id in sections
     )
@@ -237,6 +237,20 @@ def _diff_summary(diff_value: Any) -> str:
     if not diff:
         return ""
     parts = []
+    counts = [
+        ("Introduced", len(_list(diff.get("introduced")))),
+        ("Resolved", len(_list(diff.get("resolved")))),
+        ("Unchanged", len(_list(diff.get("unchanged")))),
+    ]
+    count_cards = "".join(
+        (
+            '<div class="metric diff-metric">'
+            f'<span class="metric-value">{value}</span>'
+            f'<span class="metric-label">{escape(label)}</span>'
+            "</div>"
+        )
+        for label, value in counts
+    )
     for key, title in (
         ("introduced", "Introduced Findings"),
         ("resolved", "Resolved Findings"),
@@ -258,8 +272,9 @@ def _diff_summary(diff_value: Any) -> str:
         )
     return (
         '<section id="diff" class="section">'
-        "<h1>Diff</h1>"
+        "<h1>Changes since baseline</h1>"
         f'<p class="section-lede">{escape(SECTION_HELP["diff"])}</p>'
+        f'<div class="metrics diff-counts">{count_cards}</div>'
         f"{''.join(parts)}"
         "</section>"
     )
@@ -375,6 +390,7 @@ def _reachable_capabilities(items: Any) -> str:
                 escape(str(finding.get("confidence_score", ""))),
                 escape(", ".join(str(path) for path in paths)),
                 escape(str(finding.get("mcp_server", ""))),
+                escape(", ".join(str(value) for value in _list(finding.get("mitigations")))),
                 escape("; ".join(str(value) for value in _list(finding.get("rationale")))),
             ]
         )
@@ -501,6 +517,7 @@ def _reachable_headers() -> list[str]:
         "Score",
         "Paths",
         "MCP Server",
+        "Mitigations",
         "Rationale",
     ]
 

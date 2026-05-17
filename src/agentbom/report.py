@@ -182,6 +182,10 @@ def _reachable_capability_section(items: list[dict[str, str]]) -> list[str]:
         path_detail = f"; paths: {', '.join(paths)}" if isinstance(paths, list) and paths else ""
         server = item.get("mcp_server")
         server_detail = f"; MCP server: {server}" if server else ""
+        mitigations = item.get("mitigations", [])
+        mitigation_detail = ""
+        if isinstance(mitigations, list) and mitigations:
+            mitigation_detail = f"; mitigations: {', '.join(str(value) for value in mitigations)}"
         rationale = item.get("rationale", [])
         rationale_detail = ""
         if isinstance(rationale, list) and rationale:
@@ -190,11 +194,12 @@ def _reachable_capability_section(items: list[dict[str, str]]) -> list[str]:
         score_detail = f"; score: {score}" if score is not None else ""
         detail = (
             "[risk: {risk}; confidence: {confidence}{score_detail}"
-            "{path_detail}{server_detail}{rationale_detail}]"
+            "{path_detail}{server_detail}{mitigation_detail}{rationale_detail}]"
         ).format(
             score_detail=score_detail,
             path_detail=path_detail,
             server_detail=server_detail,
+            mitigation_detail=mitigation_detail,
             rationale_detail=rationale_detail,
             **item,
         )
@@ -317,11 +322,21 @@ def _repository_risk_section(item: dict[str, Any]) -> list[str]:
 def _diff_section(diff: object) -> list[str]:
     if not isinstance(diff, dict) or not diff:
         return []
-    lines = ["## Diff", ""]
+    lines = ["## Changes since baseline", ""]
     lines.extend(
         [
             "Comparison against the supplied baseline report. Finding IDs are stable "
             "for the same normalized finding identity.",
+            "",
+        ]
+    )
+    lines.extend(
+        [
+            "| Status | Count |",
+            "| --- | ---: |",
+            f"| Introduced | {len(_list(diff.get('introduced')))} |",
+            f"| Resolved | {len(_list(diff.get('resolved')))} |",
+            f"| Unchanged | {len(_list(diff.get('unchanged')))} |",
             "",
         ]
     )
@@ -363,3 +378,7 @@ def _risk_section(risks: list[dict[str, str]]) -> list[str]:
         lines.append(f"- {risk['severity']}: {risk['reason']}")
     lines.append("")
     return lines
+
+
+def _list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []

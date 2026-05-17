@@ -17,8 +17,9 @@ It records static evidence, source paths, confidence, and rationale.
 
 - Provider: AI service or runtime vendor such as OpenAI, Anthropic, or Gemini.
 - Model: concrete model identifier found by static pattern matching, such as
-  `gpt-5.5`, `claude-opus-4.7`, `gemini-2.5-pro`, or
-  `openrouter/openai/gpt-5.5`.
+  `gpt-5.1`, `claude-sonnet-4.6`, `gemini-3.1-pro`,
+  `llama-3.3-70b-instruct`, `command-r-plus`, `sonar-pro`, or
+  `openrouter/openai/gpt-5.1`.
 - Framework: agent orchestration library such as LangChain or CrewAI.
 - MCP server: a Model Context Protocol server definition found in JSON config.
   AgentBOM records server metadata and env variable names only.
@@ -33,13 +34,13 @@ It records static evidence, source paths, confidence, and rationale.
 ## Model evidence
 
 Model findings separate the normalized model name from the source evidence. For
-example, `openrouter/openai/gpt-5.5` is stored as the model name `gpt-5.5`, while
+example, `openrouter/openai/gpt-5.1` is stored as the model name `gpt-5.1`, while
 the evidence field keeps the provider-prefixed string seen in the scanned file.
 This keeps graphs and summaries grouped by model while preserving the exact text
 reviewers need to inspect.
 
 Provider-prefixed strings are common in router and proxy configurations. A value
-such as `openrouter/anthropic/claude-opus-4.7` is static evidence of the model
+such as `openrouter/anthropic/claude-sonnet-4.6` is static evidence of the model
 identifier and route style; it is not proof that the repository can reach that
 provider at runtime.
 
