@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run AgentBOM
-        uses: vlcak27/agentbom@v0.7.0
+        uses: vlcak27/agentbom@v0.6.0
         with:
           path: .
           # Informational mode:
@@ -62,7 +62,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run AgentBOM
-        uses: vlcak27/agentbom@v0.7.0
+        uses: vlcak27/agentbom@v0.6.0
         with:
           path: .
           fail-on: none
