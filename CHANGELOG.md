@@ -2,15 +2,35 @@
 
 All notable changes to AgentBOM are documented here.
 
-## Unreleased
+## v0.7.0
 
 ### Added
 
 - GitHub Actions job summaries when `GITHUB_STEP_SUMMARY` is available.
+- Expanded static model detection for modern OpenAI, Anthropic, Google Gemini,
+  DeepSeek, Meta Llama, Mistral, Qwen, xAI Grok, Cohere Command R, and
+  Perplexity Sonar identifiers.
+- OpenRouter and LiteLLM-prefixed model support, preserving source evidence
+  while normalizing the model name for reports and graphs.
+- Expanded AI-agent framework detection for AutoGen/AG2, Claude Agent SDK,
+  DSPy, Google ADK, Haystack, Instructor, LangServe, LiteLLM, Mastra, OpenAI
+  Agents SDK, Pydantic AI, Semantic Kernel, and Vercel AI SDK.
+- Deterministic dependency extraction from JavaScript, Rust, and Go manifests,
+  including `package.json`, JavaScript lockfiles, `Cargo.toml`, and `go.mod`.
+
+### Improved
+
+- Clearer reachability rationale and mitigation signals for reviewer-facing
+  JSON, Markdown, HTML, Mermaid, and SARIF output.
+- Clearer Changes since baseline reporting for introduced, resolved, and
+  unchanged findings.
+- README and report-guide wording aligned around AgentBOM as a static security
+  scanner for AI-agent repositories.
 
 ### Compatibility
 
-- No output schema changes.
+- Output schema documentation now includes reachability mitigations and graph
+  node types for prompts and reachable capability nodes.
 - No runtime dependency changes.
 - Scanner behavior remains offline and deterministic.
 
