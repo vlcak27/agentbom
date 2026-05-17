@@ -1,8 +1,10 @@
 # GitHub Action
 
-The action runs AgentBOM in GitHub Actions. It writes report artifacts. It can
-also upload SARIF to GitHub code scanning or fail the workflow when repository
-risk meets a chosen threshold.
+The action runs AgentBOM in GitHub Actions. It writes report artifacts and a
+concise job summary with repository risk, detected AI surface, reachable
+capabilities, and generated report files. It can also upload SARIF to GitHub
+code scanning or fail the workflow when repository risk meets a chosen
+threshold.
 
 For demos, initial adoption, and repositories with intentional examples, start
 with informational mode. This writes JSON/Markdown/HTML reports without failing
@@ -28,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run AgentBOM
-        uses: vlcak27/agentbom@v0.6.0
+        uses: vlcak27/agentbom@v0.7.0
         with:
           path: .
           # Informational mode:
@@ -60,7 +62,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run AgentBOM
-        uses: vlcak27/agentbom@v0.6.0
+        uses: vlcak27/agentbom@v0.7.0
         with:
           path: .
           fail-on: none
@@ -76,6 +78,7 @@ Informational mode:
 - Set `fail-on: none`.
 - Set `sarif-upload: false`.
 - Keep `html: true` and upload `agentbom-report/` as an artifact.
+- Review the AgentBOM job summary directly in the workflow run.
 - Use this mode to inspect a baseline without failing CI.
 
 SARIF review mode:

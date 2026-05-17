@@ -9,6 +9,7 @@ from pathlib import Path
 from . import __version__
 from .cyclonedx import write_cyclonedx_report
 from .diff import attach_diff, has_new_findings_at_or_above, load_baseline_report, valid_severities
+from .github_summary import write_github_step_summary
 from .html_report import write_html_report
 from .mermaid import write_mermaid_report
 from .report import write_reports
@@ -111,6 +112,11 @@ def main(argv: list[str] | None = None) -> int:
                 mermaid_path = write_mermaid_report(bom, Path(args.output_dir))
             if args.sarif:
                 sarif_path = write_sarif_report(bom, Path(args.output_dir), pretty=args.pretty)
+            output_paths = [json_path, md_path]
+            for path in (cyclonedx_path, html_path, mermaid_path, sarif_path):
+                if path is not None:
+                    output_paths.append(path)
+            write_github_step_summary(bom, output_paths)
         except (FileNotFoundError, NotADirectoryError, PermissionError, ValueError) as exc:
             print(f"agentbom: {exc}", file=sys.stderr)
             return 1

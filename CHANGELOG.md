@@ -2,6 +2,18 @@
 
 All notable changes to AgentBOM are documented here.
 
+## Unreleased
+
+### Added
+
+- GitHub Actions job summaries when `GITHUB_STEP_SUMMARY` is available.
+
+### Compatibility
+
+- No output schema changes.
+- No runtime dependency changes.
+- Scanner behavior remains offline and deterministic.
+
 ## v0.6.0
 
 ### Added

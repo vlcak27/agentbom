@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
 from agentbom.cli import main
+from agentbom.github_summary import render_github_step_summary, write_github_step_summary
 from agentbom.html_report import render_html
 
 
@@ -13,7 +15,7 @@ def test_cli_version(capsys):
         main(["--version"])
 
     assert exc.value.code == 0
-    assert "agentbom 0.6.0" in capsys.readouterr().out
+    assert "agentbom 0.7.0" in capsys.readouterr().out
 
 
 def test_cli_help_mentions_core_workflows(capsys):
@@ -146,6 +148,123 @@ def test_cli_generates_json_and_markdown(tmp_path):
     )
 
     assert "do-not-store" not in json.dumps(data)
+
+
+def test_cli_writes_github_step_summary_when_env_is_set(tmp_path, monkeypatch):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "agent.py").write_text(
+        "\n".join(
+            [
+                "import subprocess",
+                "from langchain.chat_models import ChatOpenAI",
+                "model = 'gpt-4o'",
+                "OPENAI_API_KEY = 'do-not-store'",
+                "subprocess.run(['echo', 'hello'])",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (project / "mcp.json").write_text(
+        """
+        {
+          "mcpServers": {
+            "filesystem": {"command": "npx", "args": ["-y", "@mcp/filesystem"]},
+            "browser": {"command": "npx", "args": ["-y", "@mcp/browser"]}
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "out"
+    summary_path = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_path))
+
+    result = main(
+        [
+            "scan",
+            str(project),
+            "--output-dir",
+            str(output_dir),
+            "--html",
+            "--sarif",
+            "--pretty",
+        ]
+    )
+
+    assert result == 0
+    summary = summary_path.read_text(encoding="utf-8")
+    assert "# AgentBOM scan summary" in summary
+    assert "Risk:" in summary
+    assert "- Providers: openai" in summary
+    assert "- Models: gpt-4o" in summary
+    assert "- Frameworks: langchain" in summary
+    assert "- MCP servers: 2 (browser, filesystem)" in summary
+    assert "## Reachable capabilities" in summary
+    assert "| Capability | Reachable from | Risk | Source |" in summary
+    assert "- agentbom.json" in summary
+    assert "- agentbom.md" in summary
+    assert "- agentbom.html" in summary
+    assert "- agentbom.sarif" in summary
+    assert "do-not-store" not in summary
+
+
+def test_github_step_summary_is_not_written_when_env_is_absent(tmp_path):
+    summary_path = tmp_path / "summary.md"
+
+    wrote = write_github_step_summary(
+        {"repository_risk": {"severity": "low", "score": 0}},
+        [tmp_path / "agentbom.json"],
+        environ={},
+    )
+
+    assert wrote is False
+    assert not summary_path.exists()
+
+
+def test_github_step_summary_failure_does_not_fail_scan(tmp_path, monkeypatch):
+    project = tmp_path / "agent"
+    project.mkdir()
+    (project / "agent.py").write_text("from openai import OpenAI\n", encoding="utf-8")
+    output_dir = tmp_path / "out"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(tmp_path))
+
+    result = main(["scan", str(project), "--output-dir", str(output_dir)])
+
+    assert result == 0
+    assert (output_dir / "agentbom.json").exists()
+    assert (output_dir / "agentbom.md").exists()
+
+
+def test_github_step_summary_escapes_untrusted_markdown_values():
+    summary = render_github_step_summary(
+        {
+            "repository_risk": {"severity": "high", "score": 70},
+            "providers": [
+                {"name": "<script>alert(1)</script>", "path": "agent.py"}
+            ],
+            "models": [{"name": "gpt|evil\nnext", "source_file": "agent.py"}],
+            "frameworks": [{"name": "**langgraph**", "path": "agent.py"}],
+            "mcp_servers": [{"name": "filesystem|prod", "path": "mcp.json"}],
+            "reachable_capabilities": [
+                {
+                    "capability": "shell|execution",
+                    "reachable_from": "<langgraph>",
+                    "risk": "high",
+                    "source_file": "agent|prod.py",
+                }
+            ],
+        },
+        [Path("agentbom.json")],
+    )
+
+    assert "<script>" not in summary
+    assert "&lt;script&gt;alert\\(1\\)&lt;/script&gt;" in summary
+    assert "\\*\\*langgraph\\*\\*" in summary
+    assert "gpt|evil next" in summary
+    assert "shell\\|execution" in summary
+    assert "agent\\|prod.py" in summary
+    assert "agentbom.json" in summary
 
 
 def test_cli_generates_html_when_requested(tmp_path):
@@ -319,7 +438,7 @@ def test_cli_generates_sarif_when_requested(tmp_path):
 
     assert sarif["version"] == "2.1.0"
     assert run["tool"]["driver"]["name"] == "AgentBOM"
-    assert run["tool"]["driver"]["semanticVersion"] == "0.6.0"
+    assert run["tool"]["driver"]["semanticVersion"] == "0.7.0"
 
     assert "risk.high" in rule_ids
     assert "risk.low" in rule_ids
