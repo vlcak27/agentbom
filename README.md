@@ -9,9 +9,6 @@ AgentBOM is a static security scanner for AI-agent repositories. It detects AI
 providers, model identifiers, agent frameworks, prompts, MCP servers, secret
 references, and risky capabilities that appear reachable from an agent.
 
-AgentBOM does not run code. It does not import scanned modules, execute MCP
-servers, contact networks, or store secret values.
-
 It is different from SAST and SBOM tools because it focuses on AI-agent attack
 surface: which models, prompts, frameworks, MCP servers, and capabilities appear
 connected in the repository. Use SAST for language-specific vulnerability
@@ -22,10 +19,37 @@ context and statically inferred reachability.
 
 ## Quickstart
 
+Install AgentBOM:
+
 ```bash
 pip install ai-agentbom
+```
+
+Run AgentBOM from the root of the repository you want to review:
+
+```bash
+cd path/to/your-agent-repo
 agentbom scan . --pretty
 ```
+
+Generate review artifacts:
+
+```bash
+agentbom scan . \
+  --output-dir agentbom-report \
+  --html \
+  --mermaid \
+  --sarif \
+  --pretty
+```
+
+Open the HTML report:
+
+```bash
+open agentbom-report/agentbom.html
+```
+
+AgentBOM does not execute scanned code.
 
 ## Install by Platform
 
@@ -34,9 +58,7 @@ macOS:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -U pip
 pip install ai-agentbom
-agentbom --version
 ```
 
 Windows 11 / PowerShell:
@@ -44,9 +66,7 @@ Windows 11 / PowerShell:
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -U pip
 pip install ai-agentbom
-agentbom --version
 ```
 
 Linux:
@@ -54,30 +74,8 @@ Linux:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -U pip
 pip install ai-agentbom
-agentbom --version
 ```
-
-Generate review artifacts:
-
-```bash
-agentbom scan . --output-dir agentbom-report --html --mermaid --sarif --pretty
-```
-
-AgentBOM always writes:
-
-- `agentbom.json`: machine-readable findings
-- `agentbom.md`: human-readable review report
-
-Optional outputs:
-
-| Flag | Output | Use |
-| --- | --- | --- |
-| `--html` | `agentbom.html` | self-contained offline report |
-| `--mermaid` | `agentbom.mmd` | capability graph |
-| `--sarif` | `agentbom.sarif` | GitHub code scanning and SARIF consumers |
-| `--cyclonedx` | `agentbom.cdx.json` | package ecosystem inventory workflows |
 
 ## What It Finds
 
