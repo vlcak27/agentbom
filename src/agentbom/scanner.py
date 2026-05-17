@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Any
 
 from . import SCHEMA_VERSION
 from .detectors import detect_in_file
@@ -77,7 +78,7 @@ def scan_path(path: str | Path, policy_path: str | Path | None = None) -> dict[s
     }
     has_policy = False
     has_human_approval = False
-    reachable_capability_hits: list[dict[str, str]] = []
+    reachable_capability_hits: list[dict[str, Any]] = []
 
     for file_path in iter_scannable_files(root):
         relpath = file_path.relative_to(root).as_posix()

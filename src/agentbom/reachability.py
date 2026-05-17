@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from .detectors import confidence_for_path
+from .detectors import capability_confidence
 
 
 REACHABILITY_RULES = (
@@ -35,11 +35,9 @@ REACHABILITY_RULES = (
             r"\bwhile\s+true\s*:",
             r"\bwhile\s*\(\s*true\s*\)",
             r"\bfor\s*\(\s*;\s*;\s*\)",
-            r"\bmax_iterations\b",
-            r"\bauto_run\b",
-            r"\bcontinuous_mode\b",
-            r"\bself\.(?:run|execute)\s*\(",
-            r"\bagent\.(?:run|execute)\s*\(",
+            r"\bmax[_-]?iterations\b\s*[:=]\s*(?:[2-9]|\d{2,})",
+            r"\bauto[_-]?run\b\s*[:=]\s*true\b",
+            r"\bcontinuous[_-]?mode\b\s*[:=]\s*true\b",
         ),
         "risk": "high",
         "regex": "true",
@@ -80,18 +78,53 @@ CAPABILITY_PATHS = {
     "network_access": "network_execution",
     "shell_execution": "shell_execution",
 }
+MITIGATION_RULES = (
+    {
+        "name": "human_approval",
+        "patterns": (
+            r"\bhuman approval\b",
+            r"\bhuman[- ]in[- ]the[- ]loop\b",
+            r"\bapproval required\b",
+            r"\bmanual approval\b",
+        ),
+        "label": "human approval control",
+    },
+    {
+        "name": "confirmation",
+        "patterns": (
+            r"\bconfirm(?:ation)? required\b",
+            r"\brequire[_-]?confirmation\b",
+            r"\bconfirm_before_(?:run|execute|tool)\b",
+            r"\bconfirm\(",
+        ),
+        "label": "explicit confirmation control",
+    },
+    {
+        "name": "sandbox",
+        "patterns": (
+            r"\bsandbox(?:ed|ing)?\b",
+            r"\brestrictedpython\b",
+            r"\bwasmtime\b",
+            r"\be2b\b",
+            r"\bnsjail\b",
+            r"\bfirecracker\b",
+        ),
+        "label": "sandbox control",
+    },
+)
 
 
-def detect_reachable_capability_hits(text: str, relpath: str) -> list[dict[str, str]]:
+def detect_reachable_capability_hits(text: str, relpath: str) -> list[dict[str, Any]]:
     """Detect capability facts used for reachability inference."""
     lower = text.lower()
-    confidence = confidence_for_path(relpath)
     static_paths = _detect_static_paths(text, lower)
+    mitigations = _detect_mitigations(text)
     hits = []
     for rule in REACHABILITY_RULES:
         if _matches_rule(text, lower, rule):
             capability = str(rule["capability"])
             paths = _paths_for_capability(capability, static_paths)
+            confidence = capability_confidence(capability, relpath)
             hits.append(
                 {
                     "capability": capability,
@@ -99,6 +132,8 @@ def detect_reachable_capability_hits(text: str, relpath: str) -> list[dict[str, 
                     "risk": str(rule["risk"]),
                     "confidence": confidence,
                     "paths": paths,
+                    "mitigations": mitigations,
+                    "reference_context": _is_reference_path(relpath),
                 }
             )
     return hits
@@ -116,13 +151,14 @@ def infer_reachable_capabilities(
     frameworks: list[dict[str, str]],
     mcp_servers: list[dict[str, Any]],
     prompts: list[dict[str, str]],
-    capability_hits: list[dict[str, str]],
+    capability_hits: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     """Connect model/framework/tool findings to capability hits."""
     actors = _actors(models, frameworks, prompts)
     reachable = []
     for hit in capability_hits:
         for actor in _reachable_actors(hit, actors):
+            rationale = _reachability_rationale(actor, hit)
             _append_unique(
                 reachable,
                 {
@@ -133,6 +169,8 @@ def infer_reachable_capabilities(
                     "confidence": _combined_confidence(actor, hit),
                     "confidence_score": _confidence_score(actor, hit),
                     "paths": hit.get("paths", []),
+                    "mitigations": hit.get("mitigations", []),
+                    "rationale": rationale,
                 },
             )
     for item in _mcp_reachable_capabilities(frameworks, prompts, mcp_servers):
@@ -213,6 +251,11 @@ def _confidence_score(actor: dict[str, str], hit: dict[str, str]) -> int:
         score += 5
     if {"shell_execution", "network_execution"} & set(paths):
         score += 5
+    mitigations = hit.get("mitigations", [])
+    if isinstance(mitigations, list):
+        score -= min(len(mitigations) * 5, 15)
+    if hit.get("capability") == "autonomous_execution" and hit.get("reference_context"):
+        score -= 10
     return min(score, 100)
 
 
@@ -224,12 +267,56 @@ def _detect_static_paths(text: str, lower_text: str) -> list[str]:
     return paths
 
 
+def _detect_mitigations(text: str) -> list[str]:
+    mitigations = []
+    for rule in MITIGATION_RULES:
+        patterns = rule["patterns"]
+        if any(re.search(pattern, text, re.IGNORECASE) for pattern in patterns):  # type: ignore[arg-type]
+            mitigations.append(str(rule["label"]))
+    return mitigations
+
+
 def _paths_for_capability(capability: str, static_paths: list[str]) -> list[str]:
     paths = list(static_paths)
     capability_path = CAPABILITY_PATHS.get(capability)
     if capability_path is not None and capability_path not in paths:
         paths.append(capability_path)
     return paths
+
+
+def _reachability_rationale(actor: dict[str, str], hit: dict[str, Any]) -> list[str]:
+    capability = str(hit.get("capability", "capability"))
+    actor_name = actor.get("name", "agent actor")
+    actor_type = actor.get("type", "actor")
+    source_file = str(hit.get("source_file", "unknown file"))
+    if actor.get("source_file") == source_file:
+        relationship = "the actor and capability evidence are in the same source file"
+    else:
+        relationship = (
+            "the repository contains an agent actor and capability evidence in separate files"
+        )
+    rationale = [
+        (
+            f"{actor_type} {actor_name} can reach {capability} in {source_file} "
+            f"because {relationship}."
+        )
+    ]
+    paths = hit.get("paths", [])
+    if isinstance(paths, list) and paths:
+        rationale.append(f"Reachability path evidence: {', '.join(str(path) for path in paths)}.")
+    mitigations = hit.get("mitigations", [])
+    if isinstance(mitigations, list) and mitigations:
+        rationale.append(
+            "Mitigating signal present, but risk is retained for review: "
+            + ", ".join(str(item) for item in mitigations)
+            + "."
+        )
+    return rationale
+
+
+def _is_reference_path(relpath: str) -> bool:
+    parts = {part.lower() for part in relpath.split("/")}
+    return bool({"test", "tests", "example", "examples", "doc", "docs"} & parts)
 
 
 def _mcp_reachable_capabilities(

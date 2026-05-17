@@ -15,6 +15,17 @@ verification.
 
 ![AgentBOM HTML report preview](docs/assets/html-report-preview.svg)
 
+## 30-second demo
+
+```bash
+pip install ai-agentbom
+agentbom scan examples/simple_agent --output-dir agentbom-report --html --pretty
+```
+
+Open `agentbom-report/agentbom.html` and start with **Review Priorities** and
+**Reachable Capabilities**. The JSON and Markdown reports are written next to
+the HTML report for CI and pull request review.
+
 ## Quickstart
 
 Install from PyPI:
@@ -122,20 +133,24 @@ AgentBOM records that context:
 
 Findings are review signals. They require human review.
 
-## AgentBOM vs. Traditional SAST
+## Why this is different from SAST/SBOM
 
-AgentBOM is not a replacement for SAST. It covers a narrower AI-agent review
-scope.
+AgentBOM is not a replacement for SAST or SBOM tooling. SAST is best for
+language-specific vulnerability patterns. SBOM tooling is best for package
+inventory and license or vulnerability matching. AgentBOM answers a narrower
+AI-agent question: which AI actors, prompts, frameworks, MCP servers, and
+capabilities appear connected in this repository?
 
-| Question | Traditional SAST | AgentBOM |
+| Question | SAST/SBOM | AgentBOM |
 | --- | --- | --- |
-| Is there a risky API call? | Yes | Yes, at a coarse deterministic level |
-| Which AI provider or model identifier is present? | Usually no | Yes, by static detection |
+| What packages are present? | Yes | Yes, for AI-relevant manifests |
+| Is there a risky API call? | SAST: yes | Coarse static signal only |
+| Which AI provider or model identifier is present? | Usually no | Yes |
 | Which agent framework may route tool calls? | Usually no | Yes |
 | Are prompt or MCP surfaces present? | Usually no | Yes |
 | Can an AI actor appear to reach a capability? | Usually no | Yes, by static inference |
 | Does it work offline without executing code? | Depends on tool | Yes |
-| Does output include source paths and rationale? | Depends on tool | Yes |
+| Does output include source paths, confidence, and rationale? | Depends on tool | Yes |
 
 Use SAST for language-specific vulnerability analysis. Use SBOM tools for
 package inventory. Use AgentBOM to review AI-agent components and statically
@@ -183,8 +198,8 @@ See the [demo workflow](docs/demo-workflow.md) for a repeatable walkthrough.
 | Area | Examples |
 | --- | --- |
 | Providers | OpenAI, Anthropic, Gemini, Ollama, DeepSeek, OpenRouter |
-| Models | Static model identifiers such as `gpt-5.5`, `gpt-4o-mini`, `claude-opus-4.7`, `gemini-2.5-pro`, `deepseek-reasoner`, `llama3.3`, and provider-prefixed router strings |
-| Frameworks | LangChain, LangGraph, LlamaIndex, CrewAI, AutoGen, Semantic Kernel |
+| Models | Static model identifiers such as `gpt-5.1`, `gpt-4o-mini`, `o3-mini`, `claude-sonnet-4.6`, `gemini-3.1-pro`, `deepseek-r1`, `llama-3.3-70b-instruct`, `qwen2.5-coder`, `grok-4`, `command-r-plus`, `sonar-pro`, and provider-prefixed router strings |
+| Frameworks | LangChain, LangGraph, LlamaIndex, CrewAI, AutoGen/AG2, Semantic Kernel, Pydantic AI, OpenAI Agents SDK, Claude Agent SDK, Mastra, Google ADK, Vercel AI SDK, LiteLLM, Instructor, Haystack, DSPy, LangServe |
 | MCP | `mcp.json`, `.mcp.json`, `claude_desktop_config.json`, nested Cursor/Claude MCP config paths |
 | MCP server risk | filesystem, shell/process, browser/network, database, cloud, secrets/env, unknown/custom servers |
 | Prompts | `AGENTS.md`, `CLAUDE.md`, `prompts/*.md`, prompt YAML |
@@ -255,6 +270,13 @@ Use the action to run AgentBOM in pull requests and keep reports as workflow
 artifacts. Start with informational mode when adding AgentBOM to an existing
 repository. It publishes reports without failing CI or creating code scanning
 alerts.
+
+## Best first CI setup
+
+Start in informational mode for at least one or two pull requests. Upload the
+HTML, Markdown, and JSON reports as artifacts, but do not fail CI yet. Review
+the baseline with the team, document expected capabilities, then enable
+enforcement only for new high or critical findings.
 
 ```yaml
 name: AgentBOM
@@ -430,13 +452,14 @@ Secret values are not stored or printed. Secret findings record names such as
 `OPENAI_API_KEY` so reviewers can see which credentials are referenced without
 exposing the values.
 
-## Limitations
+## Known limitations
 
-- Static analysis only.
-- Findings require human review.
-- No exploit verification.
-- No runtime tracing.
-- No secret value reporting.
+- Static analysis only; AgentBOM does not prove exploitability.
+- Findings require human review and may include false positives.
+- Reachability is inferred from nearby static evidence, not runtime traces.
+- Detector coverage is intentionally AI-agent focused, not general SAST.
+- Dependency parsing is basic and deterministic, not a full lockfile solver.
+- Secret findings record variable names only, never values.
 - No network calls during scanning.
 
 ## Security Model

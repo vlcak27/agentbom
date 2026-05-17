@@ -478,8 +478,11 @@ def test_cli_generates_diff_outputs_and_fails_on_new_threshold(tmp_path, capsys)
     assert ("providers", "openai", "low") in introduced
     assert ("capabilities", "shell", "high") in introduced
     assert ("secret_references", "OPENAI_API_KEY", "high") in introduced
+    assert "Changes since baseline" in markdown
+    assert "| Introduced |" in markdown
     assert "Introduced Findings" in markdown
     assert "diff" in html
+    assert "Changes since baseline" in html
     assert "Introduced Findings" in html
     assert any(
         result["ruleId"].startswith("diff.introduced.capabilities.")
