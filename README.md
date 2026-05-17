@@ -269,7 +269,9 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for implementation details.
 Use the action to run AgentBOM in pull requests and keep reports as workflow
 artifacts. Start with informational mode when adding AgentBOM to an existing
 repository. It publishes reports without failing CI or creating code scanning
-alerts.
+alerts. In GitHub Actions, AgentBOM also writes a concise job summary when
+`GITHUB_STEP_SUMMARY` is available, including repository risk, detected AI
+surface, reachable capabilities, and generated report files.
 
 ## Best first CI setup
 
@@ -359,8 +361,8 @@ Operating modes:
 
 - Informational mode: use `fail-on: none` with `sarif-upload: false`
   and `html: true`. JSON/Markdown/HTML reports are uploaded as artifacts, but
-  the workflow does not fail on high or critical risk and does not create code
-  scanning alerts.
+  the workflow does not fail on high or critical risk, does not create code
+  scanning alerts, and still shows the AgentBOM job summary.
 - SARIF mode: set `sarif-upload: true` and grant `security-events: write` when
   you want findings visible in GitHub code scanning.
 - Enforcement mode: keep report artifacts enabled, then set
